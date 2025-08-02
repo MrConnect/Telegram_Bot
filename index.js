@@ -4,7 +4,7 @@ const multer = require('multer');
 const fs = require('fs').promises; // Use fs.promises for async file operations
 const path = require('path');
 
-// Load environment variables (e.g., BOT_TOKEN)
+// Load environment variables (e.g., BOT_TOKEN, ADMIN_CHAT_ID, RENDER_EXTERNAL_URL)
 require('dotenv').config();
 
 const token = process.env.BOT_TOKEN;
@@ -14,14 +14,42 @@ if (!token) {
     process.exit(1); // Exit if no token is found
 }
 
-const bot = new TelegramBot(token, {polling: true});
+// Get the public URL from Render's environment variables
+// This is crucial for Webhooks as Telegram needs to know where to send updates
+const publicUrl = process.env.RENDER_EXTERNAL_URL; 
+if (!publicUrl) {
+    console.error("Error: RENDER_EXTERNAL_URL environment variable is not set. Webhooks require this URL.");
+    console.error("Please ensure your Render service has this environment variable automatically provided or set manually.");
+    process.exit(1); // Exit if no public URL
+}
+
+// Initialize bot with Webhook mode
+const bot = new TelegramBot(token, { polling: false }); // Set polling to false
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Add these middleware lines to parse request bodies ---
+// --- Express Middleware to parse request bodies ---
 app.use(express.json()); // To parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // To parse URL-encoded request bodies
-// --- End of added middleware ---
+// --- End of middleware ---
+
+// Set up the Webhook
+// Telegram will send updates to this URL: YOUR_RENDER_URL/bot<YOUR_BOT_TOKEN>
+const webhookUrl = `${publicUrl}/bot${token}`;
+bot.setWebHook(webhookUrl).then(() => {
+    console.log(`Webhook set successfully to: ${webhookUrl}`);
+}).catch(e => {
+    console.error('Error setting webhook:', e.message);
+    // Even if webhook setting fails, we try to proceed, but bot might not receive updates
+});
+
+// Telegram Webhook route
+// This is where Telegram sends updates to your bot
+app.post(`/bot${token}`, (req, res) => {
+    bot.processUpdate(req.body); // Process the incoming Telegram update
+    res.sendStatus(200); // Important: Acknowledge receipt to Telegram
+});
+
 
 // File paths for persistent storage
 const DATA_FILE = 'bot_data.json';
@@ -263,8 +291,9 @@ bot.on('callback_query', async (query) => {
 // --- Express API Routes ---
 
 // Serve the admin dashboard HTML
+app.use(express.static(path.join(__dirname, 'public'))); // Assuming admin.html is in a 'public' folder
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Get Bot Statistics
@@ -306,7 +335,7 @@ app.get('/api/pages/:pageId', (req, res) => {
 
 // Add New Page
 app.post('/api/pages', (req, res) => {
-    const { pageId, pageData } = req.body; // This line now works correctly!
+    const { pageId, pageData } = req.body; 
     
     if (!pageId || !pageData || !pageData.title || !pageData.message) {
         return res.status(400).json({ error: 'معرف الصفحة والعنوان والرسالة مطلوبة' });
@@ -441,9 +470,10 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف' });
         }
-        const adminChatId = req.body.adminChatId || process.env.ADMIN_CHAT_ID; // Get from form data or env
-        if (!adminChatId || adminChatId === 'YOUR_ADMIN_CHAT_ID') { // Changed default placeholder
-            return res.status(400).json({ error: 'الرجاء توفير معرف دردشة المسؤول (CHAT_ID) لرفع الملفات' });
+        // Get admin chat ID from environment variables
+        const adminChatId = process.env.ADMIN_CHAT_ID; 
+        if (!adminChatId || adminChatId === 'YOUR_ADMIN_CHAT_ID') { // Ensure you replace 'YOUR_ADMIN_CHAT_ID' placeholder in .env
+            return res.status(400).json({ error: 'الرجاء توفير معرف دردشة المسؤول (ADMIN_CHAT_ID) في ملف .env لرفع الملفات.' });
         }
         
         // Send the file to the bot to get file_id
@@ -781,7 +811,9 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        botConnected: bot.isPolling() // Indicates if bot is actively polling
+        // With webhooks, bot.isPolling() will always be false. 
+        // We rely on the webhook being set and Express server running.
+        botWebhookSet: true // Indicate that webhook setup was attempted
     });
 });
 
@@ -795,21 +827,22 @@ loadData().then(() => {
         console.log(`🤖 البوت متصل ويعمل بانتظار الرسائل...`);
         console.log(`📄 البوت يبدأ بـ ${Object.keys(botData).length} صفحات و ${Object.keys(filesData).length} ملفات.`);
         console.log('---');
-        console.log('IMPORTANT: Ensure you have an ADMIN_CHAT_ID set in your environment variables or in the dashboard to upload files!');
+        console.log('IMPORTANT: Ensure you have ADMIN_CHAT_ID set in your Render environment variables to upload files!');
     });
 }).catch(err => {
     console.error('Failed to load initial data and start server:', err);
     process.exit(1); // Exit if initial data load fails
 });
 
-// Bot error handling
+// General bot error handling
 bot.on('error', (error) => {
-    console.log('خطأ في البوت:', error.message);
+    console.log('خطأ في البوت (Telegram API error):', error.message);
 });
 
-bot.on('polling_error', (error) => {
-    console.log('خطأ في الاتصال (polling error):', error.message);
-});
+// Note: 'polling_error' will no longer occur as polling is disabled
+// bot.on('polling_error', (error) => {
+//     console.log('خطأ في الاتصال (polling error):', error.message);
+// });
 
 // Process error handling for robustness
 process.on('uncaughtException', (error) => {
@@ -824,18 +857,26 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('إيقاف البوت (SIGINT)...');
-    bot.stopPolling()
-        .then(() => console.log('البوت توقف عن الاستقطاب.'))
-        .catch(err => console.error('Error stopping polling:', err))
-        .finally(() => process.exit(0));
+    try {
+        await bot.deleteWebHook(); // Attempt to delete webhook on shutdown
+        console.log('تم حذف الويب هوك بنجاح.');
+    } catch (err) {
+        console.error('فشل حذف الويب هوك:', err.message);
+    } finally {
+        process.exit(0);
+    }
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
     console.log('إنهاء البوت (SIGTERM)...');
-    bot.stopPolling()
-        .then(() => console.log('البوت توقف عن الاستقطاب.'))
-        .catch(err => console.error('Error stopping polling:', err))
-        .finally(() => process.exit(0));
+    try {
+        await bot.deleteWebHook(); // Attempt to delete webhook on shutdown
+        console.log('تم حذف الويب هوك بنجاح.');
+    } catch (err) {
+        console.error('فشل حذف الويب هوك:', err.message);
+    } finally {
+        process.exit(0);
+    }
 });
