@@ -1,158 +1,191 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم الكاملة - البوت</title>
+    <title>لوحة تحكم البوت</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --gradient-start: #6dd5ed;
+            --gradient-end: #2193b0;
+            --shadow: rgba(0, 0, 0, 0.1);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: var(--text-color);
+            display: flex;
             min-height: 100vh;
-            padding: 20px;
+            direction: rtl; /* Ensure RTL for the whole body */
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        .dashboard-container {
+            display: flex;
+            width: 100%;
+            border-radius: 15px;
             overflow: hidden;
+            box-shadow: 0 10px 30px var(--shadow);
+            background-color: var(--light-bg);
+            margin: 20px;
         }
 
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        .sidebar {
+            width: 250px;
+            background-color: var(--dark-bg);
             color: white;
-            padding: 30px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar h2 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 1.8em;
             text-align: center;
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            width: 100%;
         }
 
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            color: #e0e0e0;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+        }
+
+        .nav-item i {
+            margin-left: 15px; /* Adjust for RTL */
+            font-size: 1.2em;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            background-color: var(--light-bg);
+            overflow-y: auto;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 2.2em;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
-            background: white;
+            background-color: var(--card-bg);
             padding: 25px;
-            border-radius: 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px var(--shadow);
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-color), var(--info-color));
+        }
+
+        .stat-icon {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 15px;
         }
 
         .stat-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #4facfe;
-            margin-bottom: 10px;
+            font-size: 2.8em;
+            font-weight: 700;
+            color: var(--dark-bg);
+            margin-bottom: 5px;
         }
 
         .stat-label {
-            color: #666;
             font-size: 1.1em;
+            color: var(--secondary-color);
         }
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            min-height: 600px;
+        .hidden {
+            display: none !important;
         }
 
-        .sidebar {
-            background: #2c3e50;
-            color: white;
-            padding: 0;
+        .card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px var(--shadow);
+            margin-bottom: 30px;
         }
 
-        .nav-item {
-            display: block;
-            padding: 20px 25px;
-            color: white;
-            text-decoration: none;
-            border-bottom: 1px solid #34495e;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: #3498db;
-            padding-right: 35px;
-        }
-
-        .nav-item i {
-            margin-left: 10px;
-            width: 20px;
-        }
-
-        .content-area {
-            padding: 30px;
-            background: white;
-        }
-
-        .content-section {
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-        }
-
-        .section-title {
-            font-size: 2em;
-            color: #2c3e50;
+        .card h3 {
+            color: var(--primary-color);
             margin-bottom: 20px;
+            font-size: 1.6em;
+            border-bottom: 1px dashed var(--border-color);
             padding-bottom: 10px;
-            border-bottom: 3px solid #3498db;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
         }
 
         .form-group {
@@ -162,1362 +195,1490 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: bold;
-            color: #2c3e50;
+            font-weight: 700;
+            color: var(--dark-bg);
         }
 
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e6ed;
-            border-radius: 10px;
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: calc(100% - 20px);
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             font-size: 1em;
+            box-sizing: border-box;
             transition: border-color 0.3s ease;
         }
 
-        .form-control:focus {
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--primary-color);
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
-        .pages-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
         }
 
-        .page-card {
-            background: white;
-            border: 2px solid #e0e6ed;
-            border-radius: 15px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .page-card:hover {
-            border-color: #3498db;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .page-title {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-
-        .page-message {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 0.95em;
-        }
-
-        .buttons-list {
-            margin: 15px 0;
-        }
-
-        .button-item {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            margin: 5px 0;
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
             border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            border: none;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-card, .file-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .page-card-content, .file-card-content {
+            flex-grow: 1;
+        }
+
+        .page-card-content h4, .file-card-content h4 {
+            margin: 0 0 5px 0;
+            color: var(--dark-bg);
+            font-size: 1.2em;
+        }
+
+        .page-card-content p, .file-card-content p {
+            margin: 0;
+            color: var(--secondary-color);
             font-size: 0.9em;
-            border-right: 4px solid #3498db;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px; /* Adjust for RTL */
         }
 
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-
-        .close {
-            color: #aaa;
-            float: left;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .close:hover {
-            color: #000;
-        }
-
-        .preview-container {
-            background: #e8f4fd;
-            border: 2px dashed #3498db;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .telegram-preview {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 400px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: 1px solid #ddd;
-        }
-
-        .telegram-message {
-            font-size: 1em;
-            color: #333;
-            margin-bottom: 15px;
-            line-height: 1.4;
-        }
-
-        .telegram-buttons {
-            display: grid;
-            gap: 8px;
-        }
-
-        .telegram-button {
-            background: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            text-align: center;
-        }
-
-        .telegram-button:hover {
-            background: #e0e0e0;
+        .card-actions .btn {
+            padding: 8px 15px;
+            font-size: 0.9em;
         }
 
         .file-upload-area {
-            border: 2px dashed #3498db;
-            border-radius: 15px;
-            padding: 40px;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
             text-align: center;
-            background: #f8f9fa;
-            margin: 20px 0;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            margin-bottom: 20px;
         }
 
-        .file-upload-area:hover {
-            background: #e8f4fd;
+        .file-upload-area.highlight {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 123, 255, 0.05);
         }
 
-        .file-upload-area.dragover {
-            border-color: #2ecc71;
-            background: #d4edda;
+        .file-upload-area p {
+            margin: 0;
+            color: var(--secondary-color);
         }
 
-        .upload-icon {
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-icon {
             font-size: 3em;
-            color: #3498db;
-            margin-bottom: 15px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px var(--shadow);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: left; /* Adjust for RTL */
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--danger-color);
+            text-decoration: none;
+            cursor: pointer;
         }
 
         .alert {
-            padding: 15px 20px;
-            margin: 15px 0;
-            border-radius: 10px;
-            border-right: 5px solid;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .alert-success {
-            background: #d4edda;
+        .alert.success {
+            background-color: #d4edda;
             color: #155724;
-            border-right-color: #28a745;
+            border-color: #c3e6cb;
         }
 
-        .alert-error {
-            background: #f8d7da;
+        .alert.error {
+            background-color: #f8d7da;
             color: #721c24;
-            border-right-color: #dc3545;
+            border-color: #f5c6cb;
         }
 
-        .alert-info {
-            background: #cce7ff;
-            color: #004085;
-            border-right-color: #007bff;
+        .alert.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                display: none;
-            }
-            
-            .pages-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        .alert i {
+            font-size: 1.2em;
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px dashed var(--border-color);
+            border-radius: 5px;
+        }
+
+        .button-item {
+            background-color: var(--info-color);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .button-item .remove-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-right: -5px; /* Adjust for RTL */
+        }
+
+        .add-button-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .button-type-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .button-type-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: var(--dark-bg);
+            font-weight: normal;
+        }
+
+        .button-type-options input[type="radio"] {
+            margin-left: 5px; /* Adjust for RTL */
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Upload Progress Bar */
+        .upload-progress {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            margin-top: 15px;
+            height: 25px;
+            overflow: hidden;
+            display: none; /* Hidden by default */
+        }
+
+        .upload-progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--success-color);
+            text-align: center;
+            color: white;
+            line-height: 25px;
+            transition: width 0.3s ease-in-out;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+                margin: 10px;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 15px;
+                border-radius: 0 0 15px 15px;
+            }
+
+            .sidebar h2 {
+                font-size: 1.5em;
+                margin-bottom: 20px;
+            }
+
+            .nav-item {
+                justify-content: center;
+            }
+
+            .nav-item i {
+                margin-left: 10px; /* Adjust for RTL */
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🤖 لوحة التحكم الكاملة</h1>
-            <p>إدارة شاملة لبوت التليجرام الخاص بك</p>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h2>لوحة تحكم البوت</h2>
+            <ul class="nav-list">
+                <li><a href="#" class="nav-item active" onclick="showSection('dashboard', this)" data-section="dashboard">
+                    📊 لوحة القيادة
+                </a></li>
+                <li><a href="#" class="nav-item" onclick="showSection('pages', this)" data-section="pages">
+                    📄 إدارة الصفحات
+                </a></li>
+                <li><a href="#" class="nav-item" onclick="showSection('files', this)" data-section="files">
+                    📁 إدارة الملفات
+                </a></li>
+                <li><a href="#" class="nav-item" onclick="showSection('buttons', this)" data-section="buttons">
+                    🔗 إدارة الأزرار
+                </a></li>
+                <li><a href="#" class="nav-item" onclick="showSection('settings', this)" data-section="settings">
+                    ⚙️ الإعدادات
+                </a></li>
+                <li><a href="#" class="nav-item" onclick="showSection('logs', this)" data-section="logs">
+                    📜 سجل الأنشطة
+                </a></li>
+            </ul>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalUsers">0</div>
-                <div class="stat-label">إجمالي المستخدمين</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalMessages">0</div>
-                <div class="stat-label">إجمالي الرسائل</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalPages">0</div>
-                <div class="stat-label">عدد الصفحات</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalFiles">0</div>
-                <div class="stat-label">الملفات المرفوعة</div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <a class="nav-item active" onclick="showSection('dashboard')">
-                    <i>📊</i> لوحة المعلومات
-                </a>
-                <a class="nav-item" onclick="showSection('pages')">
-                    <i>📄</i> إدارة الصفحات
-                </a>
-                <a class="nav-item" onclick="showSection('buttons')">
-                    <i>🔘</i> إدارة الأزرار
-                </a>
-                <a class="nav-item" onclick="showSection('files')">
-                    <i>📁</i> إدارة الملفات
-                </a>
-                <a class="nav-item" onclick="showSection('preview')">
-                    <i>👁️</i> معاينة البوت
-                </a>
-                <a class="nav-item" onclick="showSection('settings')">
-                    <i>⚙️</i> الإعدادات
-                </a>
-            </div>
-
-            <!-- Content Area -->
-            <div class="content-area">
-                <!-- Dashboard Section -->
-                <div id="dashboard" class="content-section active">
-                    <h2 class="section-title">📊 لوحة المعلومات</h2>
-                    
-                    <div class="alert alert-info">
-                        <strong>حالة البوت:</strong> <span id="botStatus">🟢 يعمل بشكل طبيعي</span>
+            <section id="dashboard" class="dashboard-section">
+                <div class="section-header">
+                    <h1>لوحة القيادة</h1>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="total-users">0</div>
+                        <div class="stat-label">إجمالي المستخدمين</div>
                     </div>
-
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px;">
-                        <div class="page-card">
-                            <h3>📈 إحصائيات اليوم</h3>
-                            <p>مستخدمين جدد: <strong id="todayUsers">0</strong></p>
-                            <p>رسائل مرسلة: <strong id="todayMessages">0</strong></p>
-                            <p>أكثر الصفحات زيارة: <strong id="topPage">-</strong></p>
-                        </div>
-                        
-                        <div class="page-card">
-                            <h3>🔧 إجراءات سريعة</h3>
-                            <button class="btn" onclick="openModal('addPageModal')">إضافة صفحة جديدة</button>
-                            <button class="btn btn-success" onclick="backupData()">نسخة احتياطية</button>
-                            <button class="btn" onclick="restartBot()">إعادة تشغيل البوت</button>
-                        </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-number" id="total-messages">0</div>
+                        <div class="stat-label">إجمالي الرسائل</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-number" id="total-pages">0</div>
+                        <div class="stat-label">إجمالي الصفحات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📁</div>
+                        <div class="stat-number" id="total-files">0</div>
+                        <div class="stat-label">إجمالي الملفات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="today-users">0</div>
+                        <div class="stat-label">مستخدمي اليوم</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-number" id="today-messages">0</div>
+                        <div class="stat-label">رسائل اليوم</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⬆️</div>
+                        <div class="stat-number" id="uptime-minutes">0</div>
+                        <div class="stat-label">وقت التشغيل (دقائق)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🌟</div>
+                        <div class="stat-number" id="top-page">N/A</div>
+                        <div class="stat-label">أكثر صفحة زيارة</div>
                     </div>
                 </div>
 
-                <!-- Pages Management Section -->
-                <div id="pages" class="content-section">
-                    <h2 class="section-title">📄 إدارة الصفحات</h2>
-                    
-                    <button class="btn" onclick="openModal('addPageModal')">➕ إضافة صفحة جديدة</button>
-                    <button class="btn btn-success" onclick="loadPages()">🔄 تحديث القائمة</button>
-                    
-                    <div id="pagesContainer" class="pages-grid">
-                        <!-- Pages will be loaded here -->
+                <div class="card quick-actions">
+                    <h3>إجراءات سريعة</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-primary" onclick="backupData()">🗄️ نسخ احتياطي</button>
+                        <button class="btn btn-info" onclick="importData()">⬇️ استيراد بيانات</button>
+                        <button class="btn btn-warning" onclick="restartBot()">🔄 إعادة تشغيل البوت</button>
+                        <button class="btn btn-danger" onclick="clearAllData()">🗑️ مسح جميع البيانات</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="pages" class="dashboard-section hidden">
+                <div class="section-header">
+                    <h1>إدارة الصفحات</h1>
+                    <button class="btn btn-primary" onclick="openModal('addPageModal')">➕ إضافة صفحة جديدة</button>
+                </div>
+
+                <div class="card add-page-card">
+                    <h3>قائمة الصفحات</h3>
+                    <div id="pages-list">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="files" class="dashboard-section hidden">
+                <div class="section-header">
+                    <h1>إدارة الملفات</h1>
+                </div>
+
+                <div class="card upload-file-card">
+                    <h3>رفع ملف جديد</h3>
+                    <div class="form-group">
+                        <label for="adminChatId">معرف دردشة المسؤول (CHAT_ID) لرفع الملفات:</label>
+                        <input type="text" id="adminChatId" placeholder="أدخل معرف دردشة تيليجرام الخاص بك (ضروري لرفع الملفات)">
+                        <small style="color: grey;">يستخدم هذا لرفع الملفات إلى تيليجرام أولاً للحصول على File ID.</small>
+                    </div>
+                    <div id="file-upload-area">
+                        <input type="file" id="file-input" multiple>
+                        <div class="file-icon">⬆️</div>
+                        <p>اسحب وأفلت الملفات هنا، أو انقر للتحميل</p>
+                    </div>
+                    <div class="upload-progress" id="upload-progress">
+                        <div class="upload-progress-bar" id="upload-progress-bar">0%</div>
                     </div>
                 </div>
 
-                <!-- Buttons Management Section -->
-                <div id="buttons" class="content-section">
-                    <h2 class="section-title">🔘 إدارة الأزرار</h2>
+                <div class="card files-list-card">
+                    <h3>قائمة الملفات المرفوعة</h3>
+                    <div id="files-list">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="buttons" class="dashboard-section hidden">
+                <div class="section-header">
+                    <h1>إدارة الأزرار</h1>
+                </div>
+
+                <div class="card">
+                    <h3>أضف زرًا جديدًا لصفحة</h3>
+                    <div class="form-group">
+                        <label for="addBtnPageSelect">اختر الصفحة:</label>
+                        <select id="addBtnPageSelect" class="page-select" onchange="loadPageButtons(this.value)">
+                            <option value="">الرجاء اختيار صفحة</option>
+                            </select>
+                    </div>
+
+                    <div id="current-page-buttons">
+                        <h4>الأزرار الحالية للصفحة المختارة:</h4>
+                        <div id="buttons-list">
+                            <p>اختر صفحة لعرض أزرارها.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="buttonText">نص الزر:</label>
+                        <input type="text" id="buttonText" placeholder="مثال: الذهاب للصفحة الرئيسية">
+                    </div>
+
+                    <div class="form-group">
+                        <label>نوع إجراء الزر:</label>
+                        <div class="button-type-options">
+                            <label><input type="radio" name="buttonActionType" value="page" checked onchange="handleActionChange()"> صفحة</label>
+                            <label><input type="radio" name="buttonActionType" value="file" onchange="handleActionChange()"> ملف</label>
+                            <label><input type="radio" name="buttonActionType" value="url" onchange="handleActionChange()"> رابط URL</label>
+                            <label><input type="radio" name="buttonActionType" value="text" onchange="handleActionChange()"> نص مباشر</label>
+                        </div>
+                    </div>
+
+                    <div id="action-fields">
+                        <div id="pageActionFields" class="form-group">
+                            <label for="buttonTargetPage">الصفحة المستهدفة:</label>
+                            <select id="buttonTargetPage" class="page-select">
+                                <option value="">اختر صفحة للربط</option>
+                            </select>
+                        </div>
+
+                        <div id="fileActionFields" class="form-group hidden">
+                            <label for="buttonTargetFile">الملف المستهدف:</label>
+                            <select id="buttonTargetFile" class="file-select">
+                                <option value="">اختر ملف للربط</option>
+                            </select>
+                        </div>
+
+                        <div id="urlActionFields" class="form-group hidden">
+                            <label for="buttonTargetUrl">رابط URL:</label>
+                            <input type="text" id="buttonTargetUrl" placeholder="مثال: https://google.com">
+                        </div>
+
+                        <div id="textActionFields" class="form-group hidden">
+                            <label for="buttonTargetText">النص المباشر:</label>
+                            <textarea id="buttonTargetText" placeholder="النص الذي سيتم إرساله عند الضغط على الزر"></textarea>
+                            <small style="color: grey;">سيتم إرسال هذا النص كرسالة مباشرة للمستخدم.</small>
+                        </div>
+                    </div>
                     
                     <div class="form-group">
-                        <label>اختر الصفحة:</label>
-                        <select id="pageSelect" class="form-control" onchange="loadPageButtons()">
-                            <option value="">-- اختر صفحة --</option>
-                        </select>
+                        <label>إضافة الزر إلى:</label>
+                        <div>
+                            <label><input type="radio" name="addRowMethod" value="new" checked> صف جديد</label>
+                            <label><input type="radio" name="addRowMethod" value="existing"> صف موجود (الرقم)</label>
+                            <input type="number" id="existingRowIndex" min="0" placeholder="رقم الصف (0 للجديد)">
+                        </div>
                     </div>
-                    
-                    <button class="btn" onclick="openModal('addButtonModal')" id="addButtonBtn" disabled>➕ إضافة زر جديد</button>
-                    
-                    <div id="buttonsContainer" style="margin-top: 20px;">
-                        <!-- Buttons will be loaded here -->
-                    </div>
+
+                    <button class="btn btn-success" onclick="addButtonToPage()">➕ إضافة الزر</button>
+                </div>
+            </section>
+
+            <section id="settings" class="dashboard-section hidden">
+                <div class="section-header">
+                    <h1>الإعدادات</h1>
                 </div>
 
-                <!-- Files Management Section -->
-                <div id="files" class="content-section">
-                    <h2 class="section-title">📁 إدارة الملفات</h2>
-                    
-                    <div class="file-upload-area" id="fileUploadArea">
-                        <div class="upload-icon">📤</div>
-                        <h3>اسحب الملفات هنا أو اضغط للاختيار</h3>
-                        <p>يدعم: الصور، الفيديوهات، المستندات</p>
-                        <input type="file" id="fileInput" multiple style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.txt">
-                        <button class="btn" onclick="document.getElementById('fileInput').click()">اختيار الملفات</button>
-                    </div>
-                    
-                    <div id="filesContainer" style="margin-top: 30px;">
-                        <!-- Files will be loaded here -->
-                    </div>
+                <div class="card">
+                    <h3>معلومات البوت</h3>
+                    <p>اسم المستخدم: <strong id="botUsername">Loading...</strong></p>
+                    <p>معرف البوت (ID): <strong id="botId">Loading...</strong></p>
+                    <p>الاسم الأول: <strong id="botFirstName">Loading...</strong></p>
+                    <button class="btn btn-primary" onclick="updateBotInfo()">🔄 تحديث معلومات البوت</button>
                 </div>
 
-                <!-- Preview Section -->
-                <div id="preview" class="content-section">
-                    <h2 class="section-title">👁️ معاينة البوت</h2>
-                    
-                    <div class="form-group">
-                        <label>اختر الصفحة للمعاينة:</label>
-                        <select id="previewPageSelect" class="form-control" onchange="previewPage()">
-                            <option value="">-- اختر صفحة --</option>
-                        </select>
-                    </div>
-                    
-                    <div class="preview-container">
-                        <h3>🔍 معاينة مباشرة</h3>
-                        <div id="telegramPreview" class="telegram-preview">
-                            <div class="telegram-message">اختر صفحة للمعاينة</div>
-                        </div>
-                    </div>
+                <div class="card">
+                    <h3>أوامر البوت</h3>
+                    <p>تحديث أوامر البوت لتيليجرام (مثل /start).</p>
+                    <button class="btn btn-primary" onclick="setBotCommands()">🚀 تعيين أوامر البوت</button>
                 </div>
 
-                <!-- Settings Section -->
-                <div id="settings" class="content-section">
-                    <h2 class="section-title">⚙️ الإعدادات</h2>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                        <div class="page-card">
-                            <h3>🔐 إعدادات الأمان</h3>
-                            <button class="btn" onclick="changeAdminPassword()">تغيير كلمة المرور</button>
-                            <button class="btn" onclick="enableTwoFactor()">تفعيل المصادقة الثنائية</button>
-                        </div>
-                        
-                        <div class="page-card">
-                            <h3>📊 إعدادات البيانات</h3>
-                            <button class="btn btn-success" onclick="exportData()">تصدير البيانات</button>
-                            <button class="btn" onclick="importData()">استيراد البيانات</button>
-                            <button class="btn btn-danger" onclick="clearAllData()">مسح جميع البيانات</button>
-                        </div>
-                        
-                        <div class="page-card">
-                            <h3>🤖 إعدادات البوت</h3>
-                            <button class="btn" onclick="updateBotInfo()">تحديث معلومات البوت</button>
-                            <button class="btn" onclick="setBotCommands()">إعداد أوامر البوت</button>
-                        </div>
+                </section>
+
+            <section id="logs" class="dashboard-section hidden">
+                <div class="section-header">
+                    <h1>سجل الأنشطة</h1>
+                </div>
+                <div class="card">
+                    <h3>الأنشطة الأخيرة</h3>
+                    <div id="activity-log-list">
+                        <div class="loading-spinner"></div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
-    <!-- Add Page Modal -->
     <div id="addPageModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addPageModal')">&times;</span>
-            <h2>➕ إضافة صفحة جديدة</h2>
-            
-            <form id="addPageForm" onsubmit="addPage(event)">
-                <div class="form-group">
-                    <label>معرف الصفحة (Page ID):</label>
-                    <input type="text" id="pageId" class="form-control" required placeholder="مثال: products_page">
-                </div>
-                
-                <div class="form-group">
-                    <label>عنوان الصفحة:</label>
-                    <input type="text" id="pageTitle" class="form-control" required placeholder="مثال: 📦 صفحة المنتجات">
-                </div>
-                
-                <div class="form-group">
-                    <label>رسالة الصفحة:</label>
-                    <textarea id="pageMessage" class="form-control" rows="3" required placeholder="الرسالة التي ستظهر في الصفحة"></textarea>
-                </div>
-                
-                <button type="submit" class="btn">إضافة الصفحة</button>
-                <button type="button" class="btn btn-danger" onclick="closeModal('addPageModal')">إلغاء</button>
-            </form>
+            <span class="close-button" onclick="closeModal('addPageModal')">&times;</span>
+            <h2>إضافة صفحة جديدة</h2>
+            <div class="form-group">
+                <label for="newPageId">معرف الصفحة (فريد):</label>
+                <input type="text" id="newPageId" placeholder="مثال: main_menu_page">
+            </div>
+            <div class="form-group">
+                <label for="newPageTitle">عنوان الصفحة:</label>
+                <input type="text" id="newPageTitle" placeholder="مثال: القائمة الرئيسية">
+            </div>
+            <div class="form-group">
+                <label for="newPageMessage">رسالة الصفحة:</label>
+                <textarea id="newPageMessage" placeholder="اكتب هنا رسالة الصفحة. يمكنك استخدام تنسيق Markdown."></textarea>
+            </div>
+            <button class="btn btn-success" onclick="addNewPage()">➕ إضافة الصفحة</button>
         </div>
     </div>
 
-    <!-- Add Button Modal -->
-    <div id="addButtonModal" class="modal">
+    <div id="editPageModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('addButtonModal')">&times;</span>
-            <h2>➕ إضافة زر جديد</h2>
-            
-            <form id="addButtonForm" onsubmit="addButton(event)">
-                <div class="form-group">
-                    <label>نص الزر:</label>
-                    <input type="text" id="buttonText" class="form-control" required placeholder="مثال: 📷 عرض الصور">
-                </div>
-                
-                <div class="form-group">
-                    <label>نوع الإجراء:</label>
-                    <select id="buttonAction" class="form-control" required onchange="handleActionChange()">
-                        <option value="">-- اختر نوع الإجراء --</option>
-                        <option value="page">الانتقال لصفحة أخرى</option>
-                        <option value="file">عرض ملف</option>
-                        <option value="text">عرض نص</option>
-                        <option value="url">فتح رابط</option>
-                    </select>
-                </div>
-                
-                <div id="actionDetails" style="display: none;">
-                    <!-- Action details will be shown here based on selection -->
-                </div>
-                
-                <button type="submit" class="btn">إضافة الزر</button>
-                <button type="button" class="btn btn-danger" onclick="closeModal('addButtonModal')">إلغاء</button>
-            </form>
+            <span class="close-button" onclick="closeModal('editPageModal')">&times;</span>
+            <h2>تعديل الصفحة</h2>
+            <div class="form-group">
+                <label for="editPageId">معرف الصفحة:</label>
+                <input type="text" id="editPageId" readonly> </div>
+            <div class="form-group">
+                <label for="editPageTitle">عنوان الصفحة:</label>
+                <input type="text" id="editPageTitle">
+            </div>
+            <div class="form-group">
+                <label for="editPageMessage">رسالة الصفحة:</label>
+                <textarea id="editPageMessage"></textarea>
+            </div>
+            <button class="btn btn-success" onclick="saveEditedPage()">💾 حفظ التعديلات</button>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let botData = {};
-        let filesData = {};
-        let stats = {};
+        // Global variables/caches (will be populated by fetch requests)
+        let filesDataCache = {};
+        let botDataCache = {};
+        let adminChatId = localStorage.getItem('adminChatId') || ''; // Load from localStorage
 
-        // Initialize the admin panel
-        window.onload = function() {
-            loadStats();
-            loadPages();
-            loadFiles();
-            setupFileUpload();
-        };
+        // Helper function to show/hide sections
+        function showSection(sectionId, clickedElement) {
+            document.querySelectorAll('.dashboard-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
 
-        // Show/hide sections
-        function showSection(sectionId) {
-            // Hide all sections
-            const sections = document.querySelectorAll('.content-section');
-            sections.forEach(section => section.classList.remove('active'));
-            
-            // Remove active class from nav items
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => item.classList.remove('active'));
-            
-            // Show selected section
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Add active class to clicked nav item
-            event.target.classList.add('active');
-            
-            // Load section-specific data
-            if (sectionId === 'pages') {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            clickedElement.classList.add('active');
+
+            // Load data specific to the section when it's shown
+            if (sectionId === 'dashboard') {
+                loadStats();
+            } else if (sectionId === 'pages') {
                 loadPages();
             } else if (sectionId === 'files') {
                 loadFiles();
-            } else if (sectionId === 'preview') {
-                loadPreviewPages();
+                document.getElementById('adminChatId').value = adminChatId; // Populate admin chat ID input
+            } else if (sectionId === 'buttons') {
+                updatePageSelects();
+                updateFileSelects();
+                handleActionChange(); // Initialize button action fields
+                document.getElementById('buttons-list').innerHTML = '<p>اختر صفحة لعرض أزرارها.</p>'; // Reset button list
+            } else if (sectionId === 'settings') {
+                updateBotInfo();
+            } else if (sectionId === 'logs') {
+                loadActivityLog();
             }
         }
 
-        // Modal functions
+        // Helper function for modals
         function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
+            document.getElementById(modalId).style.display = 'flex';
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Load statistics
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/stats');
-                const data = await response.json();
-                
-                document.getElementById('totalUsers').textContent = data.users || 0;
-                document.getElementById('totalMessages').textContent = data.messages || 0;
-                document.getElementById('totalPages').textContent = data.pages || 0;
-                document.getElementById('totalFiles').textContent = data.files || 0;
-                
-                // Update today's stats
-                document.getElementById('todayUsers').textContent = data.todayUsers || 0;
-                document.getElementById('todayMessages').textContent = data.todayMessages || 0;
-                document.getElementById('topPage').textContent = data.topPage || 'غير محدد';
-                
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-
-        // Load pages
-        async function loadPages() {
-            try {
-                const response = await fetch('/api/pages');
-                const pages = await response.json();
-                
-                const container = document.getElementById('pagesContainer');
-                container.innerHTML = '';
-                
-                Object.keys(pages).forEach(pageId => {
-                    const page = pages[pageId];
-                    const pageCard = createPageCard(pageId, page);
-                    container.appendChild(pageCard);
-                });
-                
-                // Update page selects
-                updatePageSelects(pages);
-                
-            } catch (error) {
-                console.error('Error loading pages:', error);
-                showAlert('حدث خطأ في تحميل الصفحات', 'error');
-            }
-        }
-
-        // Create page card
-        function createPageCard(pageId, page) {
-            const card = document.createElement('div');
-            card.className = 'page-card';
-            
-            const buttonsHtml = page.buttons ? page.buttons.map(row => 
-                row.map(btn => `<div class="button-item">${btn.text}</div>`).join('')
-            ).join('') : '';
-            
-            card.innerHTML = `
-                <div class="page-title">${page.title}</div>
-                <div class="page-message">${page.message}</div>
-                <div class="buttons-list">${buttonsHtml}</div>
-                <div style="margin-top: 15px;">
-                    <button class="btn" onclick="editPage('${pageId}')">✏️ تحرير</button>
-                    <button class="btn btn-danger" onclick="deletePage('${pageId}')">🗑️ حذف</button>
-                    <button class="btn btn-success" onclick="duplicatePage('${pageId}')">📋 نسخ</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        // Add new page
-        async function addPage(event) {
-            event.preventDefault();
-            
-            const pageId = document.getElementById('pageId').value;
-            const title = document.getElementById('pageTitle').value;
-            const message = document.getElementById('pageMessage').value;
-            
-            const pageData = {
-                title: title,
-                message: message,
-                buttons: []
-            };
-            
-            try {
-                const response = await fetch('/api/pages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ pageId, pageData })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert('تم إضافة الصفحة بنجاح!', 'success');
-                    closeModal('addPageModal');
-                    loadPages();
-                    document.getElementById('addPageForm').reset();
-                } else {
-                    showAlert(result.error || 'حدث خطأ في إضافة الصفحة', 'error');
-                }
-                
-            } catch (error) {
-                console.error('Error adding page:', error);
-                showAlert('حدث خطأ في إضافة الصفحة', 'error');
-            }
-        }
-
-        // Show alert
-        function showAlert(message, type = 'info') {
+        // Helper function to show alerts
+        function showAlert(message, type, duration = 3000) {
+            const alertContainer = document.querySelector('.main-content'); // Or a dedicated alert container
             const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = message;
-            
-            // Add to the top of content area
-            const contentArea = document.querySelector('.content-area');
-            contentArea.insertBefore(alertDiv, contentArea.firstChild);
-            
-            // Remove after 5 seconds
+            alertDiv.className = `alert ${type}`;
+            alertDiv.innerHTML = `<i>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</i> ${message}`;
+            alertContainer.prepend(alertDiv); // Add to the top of the main content
+
             setTimeout(() => {
                 alertDiv.remove();
-            }, 5000);
+            }, duration);
         }
 
-        // Update page selects
-        function updatePageSelects(pages) {
-            const selects = ['pageSelect', 'previewPageSelect'];
-            
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">-- اختر صفحة --</option>';
-                
-                Object.keys(pages).forEach(pageId => {
-                    const option = document.createElement('option');
-                    option.value = pageId;
-                    option.textContent = pages[pageId].title;
-                    select.appendChild(option);
-                });
-            });
-        }
-
-        // Load files
-        async function loadFiles() {
-            try {
-                const response = await fetch('/api/files');
-                const files = await response.json();
-                
-                const container = document.getElementById('filesContainer');
-                container.innerHTML = '';
-                
-                if (Object.keys(files).length === 0) {
-                    container.innerHTML = '<div class="alert alert-info">لا توجد ملفات مرفوعة بعد</div>';
-                    return;
-                }
-                
-                Object.keys(files).forEach(fileId => {
-                    const file = files[fileId];
-                    const fileCard = createFileCard(fileId, file);
-                    container.appendChild(fileCard);
-                });
-                
-            } catch (error) {
-                console.error('Error loading files:', error);
-                showAlert('حدث خطأ في تحميل الملفات', 'error');
-            }
-        }
-
-        // Create file card
-        function createFileCard(fileId, file) {
-            const card = document.createElement('div');
-            card.className = 'page-card';
-            
-            const fileIcon = getFileIcon(file.type);
-            const fileSize = formatFileSize(file.size || 0);
-            
-            card.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 15px;">
-                    <div style="font-size: 2em; margin-left: 15px;">${fileIcon}</div>
-                    <div>
-                        <div class="page-title">${file.name}</div>
-                        <div class="page-message">النوع: ${file.type} | الحجم: ${fileSize}</div>
-                    </div>
-                </div>
-                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.9em; margin-bottom: 15px;">
-                    File ID: ${file.file_id}
-                </div>
-                <div>
-                    <button class="btn" onclick="previewFile('${fileId}')">👁️ معاينة</button>
-                    <button class="btn btn-success" onclick="copyFileId('${file.file_id}')">📋 نسخ ID</button>
-                    <button class="btn btn-danger" onclick="deleteFile('${fileId}')">🗑️ حذف</button>
-                </div>
-            `;
-            
-            return card;
-        }
-
-        // Get file icon based on type
-        function getFileIcon(type) {
-            if (type.startsWith('image/')) return '🖼️';
-            if (type.startsWith('video/')) return '🎥';
-            if (type.startsWith('audio/')) return '🎵';
-            if (type.includes('pdf')) return '📄';
-            if (type.includes('document') || type.includes('doc')) return '📝';
-            return '📁';
-        }
-
-        // Format file size
+        // Helper to format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Setup file upload
-        function setupFileUpload() {
-            const uploadArea = document.getElementById('fileUploadArea');
-            const fileInput = document.getElementById('fileInput');
-
-            // Click to upload
-            uploadArea.addEventListener('click', () => {
-                fileInput.click();
-            });
-
-            // Drag and drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('dragover');
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('dragover');
-                handleFiles(e.dataTransfer.files);
-            });
-
-            // File input change
-            fileInput.addEventListener('change', (e) => {
-                handleFiles(e.target.files);
-            });
-        }
-
-        // Handle file upload
-        async function handleFiles(files) {
-            for (let file of files) {
-                await uploadFile(file);
+        // ----------------------------------------------------
+        // Dashboard Stats
+        // ----------------------------------------------------
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                if (!response.ok) {
+                    throw new Error('فشل جلب الإحصائيات');
+                }
+                const stats = await response.json();
+                document.getElementById('total-users').textContent = stats.users;
+                document.getElementById('total-messages').textContent = stats.messages;
+                document.getElementById('total-pages').textContent = stats.pages;
+                document.getElementById('total-files').textContent = stats.files;
+                document.getElementById('today-users').textContent = stats.todayUsers;
+                document.getElementById('today-messages').textContent = stats.todayMessages;
+                document.getElementById('uptime-minutes').textContent = stats.uptime;
+                document.getElementById('top-page').textContent = stats.topPage || 'لا توجد';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                showAlert(`خطأ في تحميل الإحصائيات: ${error.message}`, 'error');
             }
         }
 
-        // Upload single file
-        async function uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
+        // ----------------------------------------------------
+        // Pages Management
+        // ----------------------------------------------------
+        async function loadPages() {
+            const pagesList = document.getElementById('pages-list');
+            pagesList.innerHTML = '<div class="loading-spinner"></div>';
 
             try {
-                showAlert(`جاري رفع الملف: ${file.name}...`, 'info');
-                
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('/api/pages');
+                if (!response.ok) {
+                    throw new Error('فشل جلب الصفحات');
+                }
+                botDataCache = await response.json();
+                pagesList.innerHTML = '';
 
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert(`تم رفع الملف بنجاح: ${file.name}`, 'success');
-                    loadFiles();
-                } else {
-                    showAlert(`فشل في رفع الملف: ${file.name}`, 'error');
+                if (Object.keys(botDataCache).length === 0) {
+                    pagesList.innerHTML = '<p>لا توجد صفحات بعد. ابدأ بإضافة واحدة!</p>';
+                    return;
                 }
 
+                for (const pageId in botDataCache) {
+                    const page = botDataCache[pageId];
+                    pagesList.appendChild(createPageCard(pageId, page));
+                }
+                updatePageSelects(); // Update page dropdowns
             } catch (error) {
-                console.error('Upload error:', error);
-                showAlert(`حدث خطأ في رفع الملف: ${file.name}`, 'error');
+                console.error('Error loading pages:', error);
+                pagesList.innerHTML = `<p class="alert error">خطأ في تحميل الصفحات: ${error.message}</p>`;
+                showAlert(`خطأ في تحميل الصفحات: ${error.message}`, 'error');
             }
         }
 
-        // Copy file ID to clipboard
-        function copyFileId(fileId) {
-            navigator.clipboard.writeText(fileId).then(() => {
-                showAlert('تم نسخ File ID بنجاح!', 'success');
-            });
+        function createPageCard(pageId, page) {
+            const card = document.createElement('div');
+            card.className = 'page-card';
+            card.innerHTML = `
+                <div class="page-card-content">
+                    <h4>${page.title} <small>(ID: ${pageId})</small></h4>
+                    <p>${page.message.substring(0, 100)}...</p>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-info" onclick="editPage('${pageId}')">✏️ تعديل</button>
+                    <button class="btn btn-danger" onclick="deletePage('${pageId}')">🗑️ حذف</button>
+                    <button class="btn btn-secondary" onclick="duplicatePage('${pageId}')">📋 تكرار</button>
+                </div>
+            `;
+            return card;
         }
 
-        // Delete file
-        async function deleteFile(fileId) {
-            if (!confirm('هل أنت متأكد من حذف هذا الملف؟')) return;
+        async function addNewPage() {
+            const pageId = document.getElementById('newPageId').value.trim();
+            const title = document.getElementById('newPageTitle').value.trim();
+            const message = document.getElementById('newPageMessage').value.trim();
 
+            if (!pageId || !title || !message) {
+                showAlert('الرجاء ملء جميع الحقول.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/pages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageId, pageData: { title, message, buttons: [] } })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل إضافة الصفحة');
+                }
+                showAlert(result.message, 'success');
+                closeModal('addPageModal');
+                loadPages(); // Reload pages to update UI
+                // Clear form fields
+                document.getElementById('newPageId').value = '';
+                document.getElementById('newPageTitle').value = '';
+                document.getElementById('newPageMessage').value = '';
+            } catch (error) {
+                console.error('Error adding new page:', error);
+                showAlert(`خطأ: ${error.message}`, 'error');
+            }
+        }
+
+        async function editPage(pageId) {
+            try {
+                const response = await fetch(`/api/pages/${pageId}`);
+                if (!response.ok) {
+                    throw new Error('فشل جلب بيانات الصفحة');
+                }
+                const pageData = await response.json();
+
+                document.getElementById('editPageId').value = pageId;
+                document.getElementById('editPageTitle').value = pageData.title;
+                document.getElementById('editPageMessage').value = pageData.message;
+
+                openModal('editPageModal');
+            } catch (error) {
+                console.error('Error editing page:', error);
+                showAlert(`خطأ: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveEditedPage() {
+            const pageId = document.getElementById('editPageId').value;
+            const title = document.getElementById('editPageTitle').value.trim();
+            const message = document.getElementById('editPageMessage').value.trim();
+
+            if (!title || !message) {
+                showAlert('عنوان ورسالة الصفحة مطلوبان.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/pages/${pageId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل تحديث الصفحة');
+                }
+                showAlert(result.message, 'success');
+                closeModal('editPageModal');
+                loadPages();
+            } catch (error) {
+                console.error('Error saving edited page:', error);
+                showAlert(`خطأ: ${error.message}`, 'error');
+            }
+        }
+
+        async function deletePage(pageId) {
+            if (!confirm(`هل أنت متأكد من حذف الصفحة "${pageId}"؟`)) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/pages/${pageId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل حذف الصفحة');
+                }
+                showAlert(result.message, 'success');
+                loadPages();
+            } catch (error) {
+                console.error('Error deleting page:', error);
+                showAlert(`خطأ: ${error.message}`, 'error');
+            }
+        }
+
+        // Duplicate page is a convenience function. Backend doesn't explicitly support it directly, so we add it as new.
+        async function duplicatePage(pageId) {
+            const originalPage = botDataCache[pageId];
+            if (!originalPage) {
+                showAlert('الصفحة الأصلية غير موجودة للتكرار.', 'error');
+                return;
+            }
+            const newPageId = `${pageId}_${Date.now()}`;
+            const newPageTitle = `نسخة من ${originalPage.title}`;
+
+            try {
+                const response = await fetch('/api/pages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pageId: newPageId,
+                        pageData: {
+                            title: newPageTitle,
+                            message: originalPage.message,
+                            buttons: originalPage.buttons ? JSON.parse(JSON.stringify(originalPage.buttons)) : [] // Deep copy buttons
+                        }
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل تكرار الصفحة');
+                }
+                showAlert(`تم تكرار الصفحة بنجاح كـ "${newPageId}"`, 'success');
+                loadPages();
+            } catch (error) {
+                console.error('Error duplicating page:', error);
+                showAlert(`خطأ في تكرار الصفحة: ${error.message}`, 'error');
+            }
+        }
+
+        // ----------------------------------------------------
+        // Files Management
+        // ----------------------------------------------------
+        document.getElementById('adminChatId').addEventListener('change', (e) => {
+            adminChatId = e.target.value.trim();
+            localStorage.setItem('adminChatId', adminChatId);
+            showAlert('تم حفظ معرف دردشة المسؤول.', 'info');
+        });
+
+        async function loadFiles() {
+            const filesList = document.getElementById('files-list');
+            filesList.innerHTML = '<div class="loading-spinner"></div>';
+
+            try {
+                const response = await fetch('/api/files');
+                if (!response.ok) {
+                    throw new Error('فشل جلب الملفات');
+                }
+                filesDataCache = await response.json();
+                filesList.innerHTML = '';
+
+                if (Object.keys(filesDataCache).length === 0) {
+                    filesList.innerHTML = '<p>لا توجد ملفات مرفوعة بعد.</p>';
+                    return;
+                }
+
+                for (const fileId in filesDataCache) {
+                    const file = filesDataCache[fileId];
+                    filesList.appendChild(createFileCard(file));
+                }
+                updateFileSelects(); // Update file dropdowns
+            } catch (error) {
+                console.error('Error loading files:', error);
+                filesList.innerHTML = `<p class="alert error">خطأ في تحميل الملفات: ${error.message}</p>`;
+                showAlert(`خطأ في تحميل الملفات: ${error.message}`, 'error');
+            }
+        }
+
+        function createFileCard(file) {
+            const card = document.createElement('div');
+            card.className = 'file-card';
+            card.innerHTML = `
+                <div class="file-card-content">
+                    <h4>${file.name}</h4>
+                    <p>النوع: ${file.type} | الحجم: ${formatFileSize(file.size)} | ID: ${file.id}</p>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-info" onclick="previewFile('${file.id}')">👁️ معاينة</button>
+                    <button class="btn btn-primary" onclick="copyFileId('${file.id}')">📋 نسخ المعرف</button>
+                    <button class="btn btn-danger" onclick="deleteFile('${file.id}')">🗑️ حذف</button>
+                </div>
+            `;
+            return card;
+        }
+
+        async function previewFile(fileId) {
+            const file = filesDataCache[fileId];
+            if (!file) {
+                showAlert('الملف غير موجود للمعاينه.', 'error');
+                return;
+            }
+            // For actual preview, you might want to open a new tab with the Telegram file URL
+            // (if Telegram provides direct links for files based on file_id, which it usually doesn't for direct browser access)
+            // Or if you proxy it through your backend.
+            // For now, we'll just show details in an alert.
+            showAlert(`معاينة: ${file.name} (${file.type}, ${formatFileSize(file.size)}) - معرف الملف تيليجرام: ${file.file_id}`, 'info', 5000);
+        }
+
+        async function copyFileId(fileId) {
+            const file = filesDataCache[fileId];
+            if (file && file.file_id) {
+                try {
+                    await navigator.clipboard.writeText(file.file_id);
+                    showAlert('تم نسخ معرف الملف بنجاح!', 'success');
+                } catch (err) {
+                    console.error('فشل نسخ معرف الملف: ', err);
+                    showAlert('فشل نسخ معرف الملف.', 'error');
+                }
+            } else {
+                showAlert('معرف ملف تيليجرام غير متوفر.', 'error');
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm(`هل أنت متأكد من حذف الملف "${filesDataCache[fileId]?.name}"؟`)) {
+                return;
+            }
             try {
                 const response = await fetch(`/api/files/${fileId}`, {
                     method: 'DELETE'
                 });
-
                 const result = await response.json();
-
-                if (result.success) {
-                    showAlert('تم حذف الملف بنجاح!', 'success');
-                    loadFiles();
-                } else {
-                    showAlert('فشل في حذف الملف', 'error');
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل حذف الملف');
                 }
-
+                showAlert(result.message, 'success');
+                loadFiles();
             } catch (error) {
-                console.error('Delete error:', error);
-                showAlert('حدث خطأ في حذف الملف', 'error');
+                console.error('Error deleting file:', error);
+                showAlert(`خطأ في حذف الملف: ${error.message}`, 'error');
             }
         }
 
-        // Load page buttons
-        async function loadPageButtons() {
-            const pageId = document.getElementById('pageSelect').value;
-            const addButtonBtn = document.getElementById('addButtonBtn');
-            
-            if (!pageId) {
-                addButtonBtn.disabled = true;
-                document.getElementById('buttonsContainer').innerHTML = '';
-                return;
+        // File upload logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadArea = document.getElementById('file-upload-area');
+            const fileInput = document.getElementById('file-input');
+            const uploadProgress = document.getElementById('upload-progress');
+            const uploadProgressBar = document.getElementById('upload-progress-bar');
+            const adminChatIdInput = document.getElementById('adminChatId');
+
+            if (uploadArea && fileInput) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => uploadArea.classList.add('highlight'), false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('highlight'), false);
+                });
+
+                uploadArea.addEventListener('drop', handleDrop, false);
+                fileInput.addEventListener('change', handleFileInputChange, false);
             }
-            
-            addButtonBtn.disabled = false;
-            
-            try {
-                const response = await fetch(`/api/pages/${pageId}/buttons`);
-                const buttons = await response.json();
-                
-                const container = document.getElementById('buttonsContainer');
-                container.innerHTML = '';
-                
-                if (buttons.length === 0) {
-                    container.innerHTML = '<div class="alert alert-info">لا توجد أزرار في هذه الصفحة</div>';
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+
+            function handleFileInputChange(e) {
+                const files = e.target.files;
+                handleFiles(files);
+            }
+
+            async function handleFiles(files) {
+                if (files.length === 0) return;
+                if (!adminChatId) {
+                    showAlert('الرجاء إدخال معرف دردشة المسؤول أولاً لرفع الملفات.', 'error');
+                    adminChatIdInput.focus();
                     return;
                 }
-                
-                buttons.forEach((row, rowIndex) => {
-                    const rowDiv = document.createElement('div');
-                    rowDiv.style.marginBottom = '15px';
-                    rowDiv.innerHTML = `<h4>الصف ${rowIndex + 1}:</h4>`;
-                    
-                    row.forEach((button, buttonIndex) => {
-                        const buttonCard = createButtonCard(button, rowIndex, buttonIndex, pageId);
-                        rowDiv.appendChild(buttonCard);
-                    });
-                    
-                    container.appendChild(rowDiv);
-                });
-                
-            } catch (error) {
-                console.error('Error loading buttons:', error);
-                showAlert('حدث خطأ في تحميل الأزرار', 'error');
-            }
-        }
 
-        // Create button card
-        function createButtonCard(button, rowIndex, buttonIndex, pageId) {
-            const card = document.createElement('div');
-            card.className = 'button-item';
-            card.style.display = 'flex';
-            card.style.justifyContent = 'space-between';
-            card.style.alignItems = 'center';
-            
-            card.innerHTML = `
-                <div>
-                    <strong>${button.text}</strong>
-                    <br><small>الإجراء: ${button.callback_data}</small>
-                </div>
-                <div>
-                    <button class="btn" style="padding: 5px 10px; margin: 2px;" onclick="editButton('${pageId}', ${rowIndex}, ${buttonIndex})">✏️</button>
-                    <button class="btn btn-danger" style="padding: 5px 10px; margin: 2px;" onclick="deleteButton('${pageId}', ${rowIndex}, ${buttonIndex})">🗑️</button>
-                </div>
-            `;
-            
-            return card;
-        }
+                uploadProgress.style.display = 'block';
+                uploadProgressBar.style.width = '0%';
+                uploadProgressBar.textContent = '0%';
 
-        // Handle action change in add button modal
-        function handleActionChange() {
-            const actionType = document.getElementById('buttonAction').value;
-            const detailsDiv = document.getElementById('actionDetails');
-            
-            let html = '';
-            
-            switch (actionType) {
-                case 'page':
-                    html = `
-                        <div class="form-group">
-                            <label>الصفحة المراد الانتقال إليها:</label>
-                            <select id="targetPage" class="form-control" required>
-                                <option value="">-- اختر صفحة --</option>
-                            </select>
-                        </div>
-                    `;
-                    break;
-                case 'file':
-                    html = `
-                        <div class="form-group">
-                            <label>الملف المراد عرضه:</label>
-                            <select id="targetFile" class="form-control" required>
-                                <option value="">-- اختر ملف --</option>
-                            </select>
-                        </div>
-                    `;
-                    break;
-                case 'text':
-                    html = `
-                        <div class="form-group">
-                            <label>النص المراد عرضه:</label>
-                            <textarea id="targetText" class="form-control" rows="3" required placeholder="النص الذي سيظهر للمستخدم"></textarea>
-                        </div>
-                    `;
-                    break;
-                case 'url':
-                    html = `
-                        <div class="form-group">
-                            <label>الرابط:</label>
-                            <input type="url" id="targetUrl" class="form-control" required placeholder="https://example.com">
-                        </div>
-                    `;
-                    break;
-            }
-            
-            detailsDiv.innerHTML = html;
-            detailsDiv.style.display = actionType ? 'block' : 'none';
-            
-            // Load options for selects
-            if (actionType === 'page') {
-                loadPagesForSelect('targetPage');
-            } else if (actionType === 'file') {
-                loadFilesForSelect('targetFile');
-            }
-        }
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('adminChatId', adminChatId); // Pass admin chat ID to backend
 
-        // Load pages for select dropdown
-        async function loadPagesForSelect(selectId) {
-            try {
-                const response = await fetch('/api/pages');
-                const pages = await response.json();
-                
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">-- اختر صفحة --</option>';
-                
-                Object.keys(pages).forEach(pageId => {
+                    try {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/api/upload', true);
+
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                const percent = (e.loaded / e.total) * 100;
+                                uploadProgressBar.style.width = `${percent}%`;
+                                uploadProgressBar.textContent = `${Math.round(percent)}%`;
+                            }
+                        });
+
+                        xhr.onreadystatechange = () => {
+                            if (xhr.readyState === XMLHttpRequest.DONE) {
+                                if (xhr.status === 200) {
+                                    const result = JSON.parse(xhr.responseText);
+                                    showAlert(result.message, 'success');
+                                    loadFiles();
+                                } else {
+                                    const errorResult = JSON.parse(xhr.responseText);
+                                    showAlert(errorResult.error || 'فشل رفع الملف', 'error');
+                                }
+                                uploadProgress.style.display = 'none'; // Hide progress bar after completion/error
+                            }
+                        };
+                        xhr.send(formData);
+                    } catch (error) {
+                        console.error('Error uploading file:', error);
+                        showAlert(`خطأ في رفع الملف: ${error.message}`, 'error');
+                        uploadProgress.style.display = 'none';
+                    }
+                }
+            }
+        });
+
+        // ----------------------------------------------------
+        // Buttons Management
+        // ----------------------------------------------------
+        function updatePageSelects() {
+            const pageSelects = document.querySelectorAll('.page-select');
+            pageSelects.forEach(selectElement => {
+                const currentSelection = selectElement.value; // Keep current selection if any
+                selectElement.innerHTML = '<option value="">اختر صفحة...</option>';
+                for (const pageId in botDataCache) {
                     const option = document.createElement('option');
                     option.value = pageId;
-                    option.textContent = pages[pageId].title;
-                    select.appendChild(option);
-                });
-                
-            } catch (error) {
-                console.error('Error loading pages for select:', error);
-            }
+                    option.textContent = botDataCache[pageId].title;
+                    selectElement.appendChild(option);
+                }
+                if (currentSelection && botDataCache[currentSelection]) {
+                    selectElement.value = currentSelection;
+                }
+            });
         }
 
-        // Load files for select dropdown
-        async function loadFilesForSelect(selectId) {
-            try {
-                const response = await fetch('/api/files');
-                const files = await response.json();
-                
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">-- اختر ملف --</option>';
-                
-                Object.keys(files).forEach(fileId => {
+        function updateFileSelects() {
+            const fileSelects = document.querySelectorAll('.file-select');
+            fileSelects.forEach(selectElement => {
+                const currentSelection = selectElement.value;
+                selectElement.innerHTML = '<option value="">اختر ملف...</option>';
+                for (const fileId in filesDataCache) {
                     const option = document.createElement('option');
-                    option.value = files[fileId].file_id;
-                    option.textContent = files[fileId].name;
-                    select.appendChild(option);
-                });
-                
-            } catch (error) {
-                console.error('Error loading files for select:', error);
-            }
+                    option.value = fileId;
+                    option.textContent = filesDataCache[fileId].name;
+                    selectElement.appendChild(option);
+                }
+                if (currentSelection && filesDataCache[currentSelection]) {
+                    selectElement.value = currentSelection;
+                }
+            });
         }
 
-        // Preview page
-        async function previewPage() {
-            const pageId = document.getElementById('previewPageSelect').value;
-            
+        async function loadPageButtons(pageId) {
+            const buttonsListDiv = document.getElementById('buttons-list');
+            buttonsListDiv.innerHTML = '<div class="loading-spinner"></div>';
+
             if (!pageId) {
-                document.getElementById('telegramPreview').innerHTML = '<div class="telegram-message">اختر صفحة للمعاينة</div>';
+                buttonsListDiv.innerHTML = '<p>الرجاء اختيار صفحة لعرض أزرارها.</p>';
                 return;
             }
-            
+
             try {
-                const response = await fetch(`/api/pages/${pageId}`);
-                const page = await response.json();
-                
-                const previewDiv = document.getElementById('telegramPreview');
-                
-                let buttonsHtml = '';
-                if (page.buttons && page.buttons.length > 0) {
-                    buttonsHtml = '<div class="telegram-buttons">';
-                    page.buttons.forEach(row => {
-                        row.forEach(button => {
-                            buttonsHtml += `<div class="telegram-button">${button.text}</div>`;
-                        });
+                const response = await fetch(`/api/pages/${pageId}/buttons`);
+                if (!response.ok) {
+                    throw new Error('فشل جلب الأزرار');
+                }
+                const buttonsRows = await response.json(); // array of arrays
+
+                buttonsListDiv.innerHTML = '';
+
+                if (buttonsRows.length === 0) {
+                    buttonsListDiv.innerHTML = '<p>لا توجد أزرار لهذه الصفحة.</p>';
+                    return;
+                }
+
+                buttonsRows.forEach((row, rowIndex) => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'button-row';
+                    rowDiv.innerHTML = `<h5>الصف ${rowIndex + 1}:</h5>`;
+                    row.forEach((button, buttonIndex) => {
+                        const buttonElement = document.createElement('span');
+                        buttonElement.className = 'button-item';
+                        let buttonDetails = `[${button.text}]`;
+
+                        if (button.url) {
+                            buttonDetails += ` (رابط: ${button.url})`;
+                        } else if (button.callback_data) {
+                            if (button.callback_data.startsWith('page_')) {
+                                const targetPageId = button.callback_data.substring(5);
+                                buttonDetails += ` (صفحة: ${botDataCache[targetPageId]?.title || targetPageId})`;
+                            } else if (button.callback_data.startsWith('file_')) {
+                                const targetFileId = button.callback_data.substring(5);
+                                buttonDetails += ` (ملف: ${filesDataCache[targetFileId]?.name || targetFileId})`;
+                            } else if (button.callback_data.startsWith('text_')) {
+                                // This requires backend to store the actual text
+                                buttonDetails += ` (نص: ${button.callback_data.substring(5)})`; // Placeholder, actual text not retrieved from backend yet
+                            } else {
+                                buttonDetails += ` (بيانات: ${button.callback_data})`;
+                            }
+                        }
+                        
+                        buttonElement.innerHTML = `${buttonDetails} <button class="remove-btn" onclick="removeButton('${pageId}', ${rowIndex}, ${buttonIndex})">❌</button>`;
+                        rowDiv.appendChild(buttonElement);
                     });
-                    buttonsHtml += '</div>';
-                }
-                
-                previewDiv.innerHTML = `
-                    <div class="telegram-message">${page.title}<br><br>${page.message}</div>
-                    ${buttonsHtml}
-                `;
-                
+                    buttonsListDiv.appendChild(rowDiv);
+                });
             } catch (error) {
-                console.error('Error loading page preview:', error);
-                showAlert('حدث خطأ في تحميل معاينة الصفحة', 'error');
+                console.error('Error loading buttons:', error);
+                buttonsListDiv.innerHTML = `<p class="alert error">خطأ في تحميل الأزرار: ${error.message}</p>`;
+                showAlert(`خطأ في تحميل الأزرار: ${error.message}`, 'error');
             }
         }
+        
+        async function addButtonToPage() {
+            const pageId = document.getElementById('addBtnPageSelect').value;
+            const buttonText = document.getElementById('buttonText').value.trim();
+            const actionType = document.querySelector('input[name="buttonActionType"]:checked').value;
+            let buttonData = { text: buttonText };
 
-        // Load preview pages
-        function loadPreviewPages() {
-            loadPagesForSelect('previewPageSelect');
-        }
-
-        // Quick actions
-        function backupData() {
-            showAlert('جاري إنشاء نسخة احتياطية...', 'info');
-            // Implementation will be added in the backend
-        }
-
-        function restartBot() {
-            if (confirm('هل أنت متأكد من إعادة تشغيل البوت؟')) {
-                showAlert('جاري إعادة تشغيل البوت...', 'info');
-                // Implementation will be added in the backend
+            if (!buttonText) {
+                showAlert('نص الزر مطلوب.', 'error');
+                return;
             }
-        }
-
-        // Settings functions
-        function changeAdminPassword() {
-            const newPassword = prompt('أدخل كلمة المرور الجديدة:');
-            if (newPassword) {
-                showAlert('تم تغيير كلمة المرور بنجاح!', 'success');
+            if (!pageId) {
+                showAlert('يجب اختيار صفحة.', 'error');
+                return;
             }
-        }
 
-        function exportData() {
-            showAlert('جاري تصدير البيانات...', 'info');
-            // Implementation will be added
-        }
-
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.click();
-        }
-
-        function clearAllData() {
-            if (confirm('هل أنت متأكد من مسح جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!')) {
-                showAlert('تم مسح جميع البيانات!', 'success');
+            switch (actionType) {
+                case 'page':
+                    const targetPageId = document.getElementById('buttonTargetPage').value;
+                    if (!targetPageId) { showAlert('يجب اختيار صفحة للربط.', 'error'); return; }
+                    buttonData.callback_data = `page_${targetPageId}`;
+                    break;
+                case 'file':
+                    const targetFileId = document.getElementById('buttonTargetFile').value;
+                    if (!targetFileId) { showAlert('يجب اختيار ملف للربط.', 'error'); return; }
+                    buttonData.callback_data = `file_${targetFileId}`;
+                    break;
+                case 'url':
+                    const targetUrl = document.getElementById('buttonTargetUrl').value.trim();
+                    if (!targetUrl || !targetUrl.startsWith('http')) { showAlert('رابط URL صالح مطلوب.', 'error'); return; }
+                    buttonData.url = targetUrl;
+                    break;
+                case 'text':
+                    const targetText = document.getElementById('buttonTargetText').value.trim();
+                    if (!targetText) { showAlert('نص الرد المباشر مطلوب.', 'error'); return; }
+                    // Store text content directly in callback_data with a prefix.
+                    // Or, preferably, store text content in page data and use a reference.
+                    buttonData.callback_data = `text_${targetText}`; // Simplified for demo. In real app, associate ID with actual text in backend.
+                    break;
+                default:
+                    showAlert('نوع الإجراء غير صالح.', 'error');
+                    return;
             }
-        }
 
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
+            const addRowMethod = document.querySelector('input[name="addRowMethod"]:checked')?.value || 'new';
+            let rowIndex = undefined; // Default for new row
+            if (addRowMethod === 'existing') {
+                const inputRowIndex = parseInt(document.getElementById('existingRowIndex').value);
+                if (!isNaN(inputRowIndex) && inputRowIndex >= 0) {
+                    rowIndex = inputRowIndex;
+                } else {
+                    showAlert('رقم الصف غير صالح للصف الموجود.', 'error');
+                    return;
                 }
-            });
-        }
-
-        // Auto-refresh stats every 30 seconds
-        setInterval(loadStats, 30000);
-            async function addButton(event) {
-        event.preventDefault();
-
-        const pageId = document.getElementById('pageSelect').value;
-        const text = document.getElementById('buttonText').value;
-        const actionType = document.getElementById('buttonAction').value;
-
-        if (!pageId) {
-            showAlert('⚠️ اختر صفحة أولاً', 'error');
-            return;
-        }
-
-        let callbackData = '';
-        if (actionType === 'page') {
-            callbackData = document.getElementById('targetPage').value;
-        } else if (actionType === 'file') {
-            callbackData = document.getElementById('targetFile').value;
-        } else if (actionType === 'text') {
-            callbackData = document.getElementById('targetText').value;
-        } else if (actionType === 'url') {
-            callbackData = document.getElementById('targetUrl').value;
-        }
-
-        // تحقق من البيانات
-        if (!text || !callbackData) {
-            showAlert('⚠️ من فضلك املأ جميع الحقول', 'error');
-            return;
-        }
-
-        const buttonData = {
-            text: text,
-            callback_data: callbackData
-        };
-
-        try {
-            const response = await fetch(`/api/pages/${pageId}/buttons`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ buttonData })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showAlert('✅ تم إضافة الزر بنجاح!', 'success');
-                closeModal('addButtonModal');
-                loadPageButtons(); // تحديث عرض الأزرار
-            } else {
-                showAlert(result.error || '❌ حدث خطأ في إضافة الزر', 'error');
             }
-        } catch (error) {
-            console.error('Error adding button:', error);
-            showAlert('⚠️ حدث خطأ في إضافة الزر', 'error');
-        }
-    }
-        // 📝 تعديل الصفحة
-async function editPage(pageId) {
-    try {
-        const response = await fetch(`/api/pages/${pageId}`);
-        const page = await response.json();
 
-        const newTitle = prompt('عنوان الصفحة:', page.title);
-        const newMessage = prompt('رسالة الصفحة:', page.message);
-
-        if (newTitle && newMessage) {
-            const updateResponse = await fetch(`/api/pages/${pageId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: newTitle, message: newMessage })
-            });
-
-            const result = await updateResponse.json();
-            if (result.success) {
-                showAlert('✅ تم تعديل الصفحة بنجاح!', 'success');
-                loadPages();
-            } else {
-                showAlert(result.error || '❌ فشل تعديل الصفحة', 'error');
+            try {
+                const response = await fetch(`/api/pages/${pageId}/buttons`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ buttonData, rowIndex })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل إضافة الزر');
+                }
+                showAlert(result.message, 'success');
+                loadPageButtons(pageId); // Reload buttons for the current page
+                // Clear form fields
+                document.getElementById('buttonText').value = '';
+                document.getElementById('buttonTargetUrl').value = '';
+                document.getElementById('buttonTargetText').value = '';
+                // Reset radio to default 'page' and update fields
+                document.querySelector('input[name="buttonActionType"][value="page"]').checked = true;
+                document.querySelector('input[name="addRowMethod"][value="new"]').checked = true;
+                document.getElementById('existingRowIndex').value = '';
+                handleActionChange();
+            } catch (error) {
+                console.error('Error adding button:', error);
+                showAlert(`خطأ: ${error.message}`, 'error');
             }
         }
-    } catch (error) {
-        console.error('Edit error:', error);
-        showAlert('⚠️ حدث خطأ أثناء تعديل الصفحة', 'error');
-    }
-}
 
-// 🗑️ حذف الصفحة
-async function deletePage(pageId) {
-    if (!confirm('هل أنت متأكد من حذف هذه الصفحة؟')) return;
+        function handleActionChange() {
+            const actionType = document.querySelector('input[name="buttonActionType"]:checked').value;
+            document.getElementById('pageActionFields').classList.add('hidden');
+            document.getElementById('fileActionFields').classList.add('hidden');
+            document.getElementById('urlActionFields').classList.add('hidden');
+            document.getElementById('textActionFields').classList.add('hidden');
 
-    try {
-        const response = await fetch(`/api/pages/${pageId}`, { method: 'DELETE' });
-        const result = await response.json();
-
-        if (result.success) {
-            showAlert('✅ تم حذف الصفحة بنجاح!', 'success');
-            loadPages();
-        } else {
-            showAlert(result.error || '❌ فشل حذف الصفحة', 'error');
+            switch (actionType) {
+                case 'page':
+                    document.getElementById('pageActionFields').classList.remove('hidden');
+                    break;
+                case 'file':
+                    document.getElementById('fileActionFields').classList.remove('hidden');
+                    break;
+                case 'url':
+                    document.getElementById('urlActionFields').classList.remove('hidden');
+                    break;
+                case 'text':
+                    document.getElementById('textActionFields').classList.remove('hidden');
+                    break;
+            }
+            updatePageSelects();
+            updateFileSelects();
         }
-    } catch (error) {
-        console.error('Delete error:', error);
-        showAlert('⚠️ حدث خطأ أثناء حذف الصفحة', 'error');
-    }
-}
 
-// 📋 نسخ الصفحة
-async function duplicatePage(pageId) {
-    try {
-        const response = await fetch(`/api/pages/${pageId}`);
-        const page = await response.json();
-
-        const newPageId = prompt('أدخل معرف الصفحة الجديدة:', `${pageId}_copy`);
-        if (!newPageId) return;
-
-        const newPageData = {
-            title: page.title + ' (نسخة)',
-            message: page.message,
-            buttons: page.buttons || []
-        };
-
-        const createResponse = await fetch(`/api/pages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pageId: newPageId, pageData: newPageData })
-        });
-
-        const result = await createResponse.json();
-        if (result.success) {
-            showAlert('✅ تم نسخ الصفحة بنجاح!', 'success');
-            loadPages();
-        } else {
-            showAlert(result.error || '❌ فشل نسخ الصفحة', 'error');
+        async function removeButton(pageId, rowIndex, buttonIndex) {
+            if (!confirm(`هل أنت متأكد من حذف هذا الزر؟`)) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/pages/${pageId}/buttons`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rowIndex, buttonIndex })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل حذف الزر');
+                }
+                showAlert(result.message, 'success');
+                loadPageButtons(pageId); // Reload buttons
+            } catch (error) {
+                console.error('Error removing button:', error);
+                showAlert(`خطأ في حذف الزر: ${error.message}`, 'error');
+            }
         }
-    } catch (error) {
-        console.error('Duplicate error:', error);
-        showAlert('⚠️ حدث خطأ أثناء نسخ الصفحة', 'error');
-    }
-}
 
-        // 📤 تصدير البيانات
-function exportData() {
-    fetch('/api/export')
-        .then(response => {
-            if (!response.ok) throw new Error('خطأ في التصدير');
-            return response.blob();
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'bot-backup.json';
-            a.click();
-            showAlert('✅ تم تصدير البيانات بنجاح!', 'success');
-        })
-        .catch(error => {
-            console.error(error);
-            showAlert('⚠️ فشل تصدير البيانات', 'error');
-        });
-}
+        // ----------------------------------------------------
+        // Settings & Quick Actions
+        // ----------------------------------------------------
+        async function backupData() {
+            try {
+                const response = await fetch('/api/export');
+                if (!response.ok) {
+                    throw new Error('فشل تصدير البيانات');
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bot-backup.json';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                showAlert('تم تصدير البيانات بنجاح!', 'success');
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                showAlert(`خطأ في تصدير البيانات: ${error.message}`, 'error');
+            }
+        }
 
-// 📥 استيراد البيانات
-function importData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        async function importData() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
 
-        const formData = new FormData();
-        formData.append('backupFile', file);
+                const formData = new FormData();
+                formData.append('backupFile', file);
 
-        try {
-            const response = await fetch('/api/import', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.success) {
-                showAlert('✅ تم استيراد البيانات بنجاح!', 'success');
+                try {
+                    const response = await fetch('/api/import', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.error || 'فشل استيراد البيانات');
+                    }
+                    showAlert(result.message, 'success');
+                    loadStats();
+                    loadPages();
+                    loadFiles();
+                } catch (error) {
+                    console.error('Error importing data:', error);
+                    showAlert(`خطأ في استيراد البيانات: ${error.message}`, 'error');
+                }
+            };
+            fileInput.click();
+        }
+
+        async function restartBot() {
+            if (!confirm('هل أنت متأكد من إعادة تشغيل البوت؟ سيؤدي هذا إلى فصل البوت مؤقتًا.')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/restart', { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل إعادة تشغيل البوت');
+                }
+                showAlert(result.message, 'info');
+            } catch (error) {
+                console.error('Error restarting bot:', error);
+                showAlert(`خطأ في إعادة تشغيل البوت: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearAllData() {
+            if (!confirm('تحذير: هل أنت متأكد من مسح جميع بيانات البوت؟ هذا الإجراء لا يمكن التراجع عنه!')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/clear-all', { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل مسح البيانات');
+                }
+                showAlert(result.message, 'success');
+                loadStats();
                 loadPages();
                 loadFiles();
-            } else {
-                showAlert(result.error || '⚠️ فشل استيراد البيانات', 'error');
+            } catch (error) {
+                console.error('Error clearing all data:', error);
+                showAlert(`خطأ في مسح البيانات: ${error.message}`, 'error');
             }
-        } catch (err) {
-            console.error(err);
-            showAlert('⚠️ حدث خطأ أثناء الاستيراد', 'error');
         }
-    };
-    input.click();
-}
 
-// 🗑️ مسح جميع البيانات
-function clearAllData() {
-    if (!confirm('⚠️ هل أنت متأكد من مسح جميع البيانات؟')) return;
-
-    fetch('/api/clear-all', { method: 'POST' })
-        .then(res => res.json())
-        .then(result => {
-            if (result.success) {
-                showAlert('✅ تم مسح جميع البيانات', 'success');
-                loadPages();
-                loadFiles();
-            } else {
-                showAlert('⚠️ فشل مسح البيانات', 'error');
+        async function updateBotInfo() {
+            try {
+                const response = await fetch('/api/bot-info');
+                if (!response.ok) {
+                    throw new Error('فشل جلب معلومات البوت');
+                }
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('botUsername').textContent = `@${data.botInfo.username}`;
+                    document.getElementById('botId').textContent = data.botInfo.id;
+                    document.getElementById('botFirstName').textContent = data.botInfo.first_name;
+                    showAlert('تم تحديث معلومات البوت بنجاح.', 'success');
+                } else {
+                    showAlert(data.error || 'فشل تحديث معلومات البوت.', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating bot info:', error);
+                showAlert(`خطأ في تحديث معلومات البوت: ${error.message}`, 'error');
             }
-        })
-        .catch(error => {
-            console.error(error);
-            showAlert('⚠️ حدث خطأ أثناء المسح', 'error');
-        });
-}
+        }
 
-// 🔄 تحديث معلومات البوت
-function updateBotInfo() {
-    fetch('/api/bot-info')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const info = data.botInfo;
-                alert(`🤖 اسم البوت: ${info.first_name}\n📛 اسم المستخدم: @${info.username}\n🆔 ID: ${info.id}`);
-                showAlert('✅ تم تحديث معلومات البوت', 'success');
-            } else {
-                showAlert(data.error || '⚠️ فشل تحديث المعلومات', 'error');
+        async function setBotCommands() {
+            try {
+                const response = await fetch('/api/bot-commands', { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'فشل تعيين أوامر البوت');
+                }
+                showAlert(result.message, 'success');
+            } catch (error) {
+                console.error('Error setting bot commands:', error);
+                showAlert(`خطأ في تعيين أوامر البوت: ${error.message}`, 'error');
             }
-        })
-        .catch(error => {
-            console.error(error);
-            showAlert('⚠️ حدث خطأ أثناء التحديث', 'error');
-        });
-}
+        }
 
-// 📝 إعداد أوامر البوت
-function setBotCommands() {
-    fetch('/api/bot-commands', { method: 'POST' })
-        .then(res => res.json())
-        .then(result => {
-            if (result.success) {
-                showAlert('✅ تم تحديث أوامر البوت', 'success');
-            } else {
-                showAlert(result.error || '⚠️ فشل تحديث أوامر البوت', 'error');
+        // ----------------------------------------------------
+        // Activity Log
+        // ----------------------------------------------------
+        async function loadActivityLog() {
+            const logList = document.getElementById('activity-log-list');
+            logList.innerHTML = '<div class="loading-spinner"></div>';
+            try {
+                const response = await fetch('/api/activity-log');
+                if (!response.ok) {
+                    throw new Error('فشل جلب سجل الأنشطة');
+                }
+                const activities = await response.json();
+                logList.innerHTML = '';
+                if (activities.length === 0) {
+                    logList.innerHTML = '<p>لا توجد أنشطة مسجلة بعد.</p>';
+                    return;
+                }
+                activities.forEach(activity => {
+                    const activityDiv = document.createElement('div');
+                    activityDiv.className = 'card'; // Reuse card style
+                    activityDiv.innerHTML = `
+                        <h4>${activity.description}</h4>
+                        <p>النوع: ${activity.type} | الوقت: ${new Date(activity.timestamp).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'medium' })}</p>
+                        ${activity.details ? `<p><small>التفاصيل: ${JSON.stringify(activity.details)}</small></p>` : ''}
+                    `;
+                    logList.appendChild(activityDiv);
+                });
+            } catch (error) {
+                console.error('Error loading activity log:', error);
+                logList.innerHTML = `<p class="alert error">خطأ في تحميل سجل الأنشطة: ${error.message}</p>`;
+                showAlert(`خطأ في تحميل سجل الأنشطة: ${error.message}`, 'error');
             }
-        })
-        .catch(error => {
-            console.error(error);
-            showAlert('⚠️ حدث خطأ أثناء تحديث الأوامر', 'error');
+        }
+
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('dashboard', document.querySelector('.nav-item[data-section="dashboard"]'));
         });
-}
-        function restartBot() {
-    if (confirm('هل أنت متأكد من إعادة تشغيل البوت؟')) {
-        fetch('/api/restart', { method: 'POST' })
-            .then(r => r.json())
-            .then(d => showAlert(d.message || '✅ تم إرسال أمر إعادة التشغيل', 'success'))
-            .catch(() => showAlert('⚠️ خطأ أثناء إعادة التشغيل', 'error'));
-    }
-}
-
-        function previewFile(fileId) {
-    fetch(`/api/files/${fileId}/preview`)
-        .then(r => r.json())
-        .then(file => {
-            alert(`📁 اسم: ${file.name}\n📄 نوع: ${file.type}\n📦 حجم: ${file.size}`);
-        })
-        .catch(() => showAlert('⚠️ خطأ أثناء المعاينة', 'error'));
-}
-
-
     </script>
 </body>
 </html>
