@@ -1248,6 +1248,63 @@
 
         // Auto-refresh stats every 30 seconds
         setInterval(loadStats, 30000);
+            async function addButton(event) {
+        event.preventDefault();
+
+        const pageId = document.getElementById('pageSelect').value;
+        const text = document.getElementById('buttonText').value;
+        const actionType = document.getElementById('buttonAction').value;
+
+        if (!pageId) {
+            showAlert('⚠️ اختر صفحة أولاً', 'error');
+            return;
+        }
+
+        let callbackData = '';
+        if (actionType === 'page') {
+            callbackData = document.getElementById('targetPage').value;
+        } else if (actionType === 'file') {
+            callbackData = document.getElementById('targetFile').value;
+        } else if (actionType === 'text') {
+            callbackData = document.getElementById('targetText').value;
+        } else if (actionType === 'url') {
+            callbackData = document.getElementById('targetUrl').value;
+        }
+
+        // تحقق من البيانات
+        if (!text || !callbackData) {
+            showAlert('⚠️ من فضلك املأ جميع الحقول', 'error');
+            return;
+        }
+
+        const buttonData = {
+            text: text,
+            callback_data: callbackData
+        };
+
+        try {
+            const response = await fetch(`/api/pages/${pageId}/buttons`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ buttonData })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert('✅ تم إضافة الزر بنجاح!', 'success');
+                closeModal('addButtonModal');
+                loadPageButtons(); // تحديث عرض الأزرار
+            } else {
+                showAlert(result.error || '❌ حدث خطأ في إضافة الزر', 'error');
+            }
+        } catch (error) {
+            console.error('Error adding button:', error);
+            showAlert('⚠️ حدث خطأ في إضافة الزر', 'error');
+        }
+    }
     </script>
 </body>
 </html>
