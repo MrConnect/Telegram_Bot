@@ -877,4 +877,5 @@ process.on('SIGTERM', async () => {
         console.error('فشل حذف الويب هوك:', err.message);
     } finally {
         process.exit(0);
-    });
+    }
+});
