@@ -16,7 +16,7 @@ if (!token) {
 
 // Get the public URL from Render's environment variables
 // This is crucial for Webhooks as Telegram needs to know where to send updates
-const publicUrl = process.env.RENDER_EXTERNAL_URL; 
+const publicUrl = process.env.RENDER_EXTERNAL_URL;
 if (!publicUrl) {
     console.error("Error: RENDER_EXTERNAL_URL environment variable is not set. Webhooks require this URL.");
     console.error("Please ensure your Render service has this environment variable automatically provided or set manually.");
@@ -164,9 +164,9 @@ function showPage(chatId, pageKey, messageId = null) {
         bot.sendMessage(chatId, "⚠️ هذه الصفحة غير موجودة.");
         return;
     }
-    
+
     // Ensure buttons are in the correct Telegram format (array of arrays)
-    const inlineKeyboard = page.buttons ? page.buttons.map(row => 
+    const inlineKeyboard = page.buttons ? page.buttons.map(row =>
         row.map(button => {
             if (button.url) {
                 return { text: button.text, url: button.url };
@@ -183,9 +183,9 @@ function showPage(chatId, pageKey, messageId = null) {
         },
         parse_mode: 'Markdown' // Allow basic Markdown in messages
     };
-    
+
     const message = `${page.title}\n\n${page.message}`;
-    
+
     if (messageId) {
         bot.editMessageText(message, {
             chat_id: chatId,
@@ -202,7 +202,7 @@ function showPage(chatId, pageKey, messageId = null) {
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     resetDailyStats(); // Check and reset daily stats
-    
+
     stats.users.add(chatId);
     stats.todayUsers.add(chatId);
     stats.messages++;
@@ -227,7 +227,7 @@ bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
     const data = String(query.callback_data); // Ensure data is a string
-    
+
     resetDailyStats();
     stats.messages++;
     stats.todayMessages++;
@@ -259,7 +259,7 @@ bot.on('callback_query', async (query) => {
         }
         return;
     }
-    
+
     // Handle Page buttons (prefixed with 'page_')
     if (data.startsWith('page_')) {
         const pageKey = data.substring(5); // Remove 'page_' prefix
@@ -290,16 +290,15 @@ bot.on('callback_query', async (query) => {
 
 // --- Express API Routes ---
 
-// Serve the admin dashboard HTML
-app.use(express.static(path.join(__dirname, 'public'))); // Assuming admin.html is in a 'public' folder
+// Serve the admin dashboard HTML directly from the root directory
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // Get Bot Statistics
 app.get('/api/stats', (req, res) => {
     resetDailyStats(); // Ensure stats are up-to-date before sending
-    
+
     const now = new Date();
     const uptimeMs = now.getTime() - stats.startDate.getTime();
     const uptimeMinutes = Math.floor(uptimeMs / (1000 * 60));
@@ -325,32 +324,32 @@ app.get('/api/pages', (req, res) => {
 app.get('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
     const page = botData[pageId];
-    
+
     if (!page) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
-    
+
     res.json(page);
 });
 
 // Add New Page
 app.post('/api/pages', (req, res) => {
-    const { pageId, pageData } = req.body; 
-    
+    const { pageId, pageData } = req.body;
+
     if (!pageId || !pageData || !pageData.title || !pageData.message) {
         return res.status(400).json({ error: 'معرف الصفحة والعنوان والرسالة مطلوبة' });
     }
-    
+
     if (botData[pageId]) {
         return res.status(400).json({ error: 'معرف الصفحة هذا موجود بالفعل' });
     }
-    
+
     const newPage = {
         title: pageData.title,
         message: pageData.message,
         buttons: pageData.buttons || []
     };
-    
+
     botData[pageId] = newPage;
     saveData(); // Save changes
     res.json({ success: true, message: 'تم إضافة الصفحة بنجاح' });
@@ -360,11 +359,11 @@ app.post('/api/pages', (req, res) => {
 app.put('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
     const pageData = req.body; // Can contain title, message, buttons
-    
+
     if (!botData[pageId]) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
-    
+
     // Merge new data with existing page data
     botData[pageId] = { ...botData[pageId], ...pageData };
     saveData(); // Save changes
@@ -374,11 +373,11 @@ app.put('/api/pages/:pageId', (req, res) => {
 // Delete a Page
 app.delete('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
-    
+
     if (!botData[pageId]) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
-    
+
     delete botData[pageId];
     saveData(); // Save changes
     res.json({ success: true, message: 'تم حذف الصفحة بنجاح' });
@@ -388,11 +387,11 @@ app.delete('/api/pages/:pageId', (req, res) => {
 app.get('/api/pages/:pageId/buttons', (req, res) => {
     const pageId = req.params.pageId;
     const page = botData[pageId];
-    
+
     if (!page) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
-    
+
     res.json(page.buttons || []);
 });
 
@@ -400,7 +399,7 @@ app.get('/api/pages/:pageId/buttons', (req, res) => {
 app.post('/api/pages/:pageId/buttons', (req, res) => {
     const pageId = req.params.pageId;
     const { buttonData, rowIndex } = req.body;
-    
+
     if (!botData[pageId]) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
@@ -410,15 +409,15 @@ app.post('/api/pages/:pageId/buttons', (req, res) => {
 
     // Ensure callback_data/url fields are correctly set up by frontend,
     // and just store them as provided. The bot logic handles prefixes.
-    
+
     if (!botData[pageId].buttons) {
         botData[pageId].buttons = [];
     }
-    
+
     // If rowIndex is provided, try to add to an existing row
     // Otherwise, add to a new row (or the end if no rowIndex)
     const targetRow = rowIndex !== undefined ? parseInt(rowIndex) : botData[pageId].buttons.length;
-    
+
     if (!botData[pageId].buttons[targetRow]) {
         botData[pageId].buttons[targetRow] = []; // Create new row if it doesn't exist
     }
@@ -471,14 +470,14 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
             return res.status(400).json({ error: 'لم يتم تحديد ملف' });
         }
         // Get admin chat ID from environment variables
-        const adminChatId = process.env.ADMIN_CHAT_ID; 
+        const adminChatId = process.env.ADMIN_CHAT_ID;
         if (!adminChatId || adminChatId === 'YOUR_ADMIN_CHAT_ID') { // Ensure you replace 'YOUR_ADMIN_CHAT_ID' placeholder in .env
             return res.status(400).json({ error: 'الرجاء توفير معرف دردشة المسؤول (ADMIN_CHAT_ID) في ملف .env لرفع الملفات.' });
         }
-        
+
         // Send the file to the bot to get file_id
         let sentMessage;
-        
+
         // Use an object to store common options
         const sendOptions = {
             caption: `ملف جديد: ${req.file.originalname}`,
@@ -494,7 +493,7 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
         } else {
             sentMessage = await bot.sendDocument(adminChatId, req.file.buffer, sendOptions);
         }
-        
+
         // Extract file_id from the sent message response
         let fileId;
         if (sentMessage.photo) {
@@ -511,7 +510,7 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
         if (!fileId) {
             throw new Error("فشل الحصول على معرف الملف من تيليجرام.");
         }
-        
+
         // Save file metadata
         const uniqueFileId = Date.now().toString(); // Use timestamp as a unique ID for our system
         const fileData = {
@@ -522,16 +521,16 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
             file_id: fileId, // This is the Telegram file_id
             uploadDate: new Date().toISOString()
         };
-        
+
         filesData[fileData.id] = fileData;
         saveData(); // Save changes
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: 'تم رفع الملف بنجاح',
-            fileData: fileData 
+            fileData: fileData
         });
-        
+
     } catch (error) {
         console.error('Upload error:', error);
         res.status(500).json({ error: `حدث خطأ في رفع الملف: ${error.message}` });
@@ -541,11 +540,11 @@ app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
 // Delete a File
 app.delete('/api/files/:fileId', (req, res) => {
     const fileId = req.params.fileId;
-    
+
     if (!filesData[fileId]) {
         return res.status(404).json({ error: 'الملف غير موجود' });
     }
-    
+
     delete filesData[fileId];
     saveData(); // Save changes
     res.json({ success: true, message: 'تم حذف الملف بنجاح' });
@@ -555,11 +554,11 @@ app.delete('/api/files/:fileId', (req, res) => {
 app.get('/api/files/:fileId/preview', (req, res) => {
     const fileId = req.params.fileId;
     const file = filesData[fileId];
-    
+
     if (!file) {
         return res.status(404).json({ error: 'الملف غير موجود' });
     }
-    
+
     res.json({
         name: file.name,
         type: file.type,
@@ -582,7 +581,7 @@ app.get('/api/export', (req, res) => {
         },
         exportDate: new Date().toISOString()
     };
-    
+
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=bot-backup.json');
     res.json(exportData);
@@ -594,18 +593,18 @@ app.post('/api/import', uploadBuffer.single('backupFile'), async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف النسخة الاحتياطية' });
         }
-        
+
         const backupContent = req.file.buffer.toString();
         const backupData = JSON.parse(backupContent);
-        
+
         if (backupData.botData) {
             botData = backupData.botData;
         }
-        
+
         if (backupData.filesData) {
             filesData = backupData.filesData;
         }
-        
+
         if (backupData.stats) {
             // Reconstruct Sets from imported arrays
             stats.users = new Set(backupData.stats.totalUsers || []);
@@ -616,10 +615,10 @@ app.post('/api/import', uploadBuffer.single('backupFile'), async (req, res) => {
             stats.todayMessages = 0;
             stats.dailyReset = new Date().toDateString();
         }
-        
+
         saveData(); // Save imported data to disk
         res.json({ success: true, message: 'تم استيراد البيانات بنجاح' });
-        
+
     } catch (error) {
         console.error('Import error:', error);
         res.status(500).json({ error: `حدث خطأ في استيراد البيانات: ${error.message}` });
@@ -639,7 +638,7 @@ app.post('/api/restart', (req, res) => {
 app.post('/api/clear-all', (req, res) => {
     botData = {};
     filesData = {};
-    
+
     stats = {
         users: new Set(),
         messages: 0,
@@ -648,7 +647,7 @@ app.post('/api/clear-all', (req, res) => {
         startDate: new Date(),
         dailyReset: new Date().toDateString()
     };
-    
+
     saveData(); // Save cleared state
     res.json({ success: true, message: 'تم مسح جميع البيانات بنجاح' });
 });
@@ -656,15 +655,15 @@ app.post('/api/clear-all', (req, res) => {
 // Search Data
 app.get('/api/search', (req, res) => {
     const query = req.query.q?.toLowerCase() || '';
-    
+
     if (!query) {
         return res.json({ pages: [], files: [] });
     }
-    
+
     // Search in Pages
     const matchingPages = Object.keys(botData).filter(pageId => {
         const page = botData[pageId];
-        return page.title.toLowerCase().includes(query) || 
+        return page.title.toLowerCase().includes(query) ||
                page.message.toLowerCase().includes(query) ||
                pageId.toLowerCase().includes(query);
     }).map(pageId => ({
@@ -672,7 +671,7 @@ app.get('/api/search', (req, res) => {
         title: botData[pageId].title,
         type: 'page'
     }));
-    
+
     // Search in Files
     const matchingFiles = Object.keys(filesData).filter(fileId => {
         const file = filesData[fileId];
@@ -683,7 +682,7 @@ app.get('/api/search', (req, res) => {
         name: filesData[fileId].name,
         type: 'file'
     }));
-    
+
     res.json({
         pages: matchingPages,
         files: matchingFiles
@@ -716,17 +715,17 @@ app.get('/api/activity-log', (req, res) => {
         // You would add more specific logs here (e.g., page added, file uploaded)
         // by pushing to a separate array/database table when those events occur.
     ];
-    
+
     res.json(activities);
 });
 
 // Get Detailed Stats
 app.get('/api/detailed-stats', (req, res) => {
     resetDailyStats();
-    
+
     const now = new Date();
     const uptimeMs = now.getTime() - stats.startDate.getTime();
-    
+
     res.json({
         overview: {
             totalUsers: stats.users.size,
@@ -775,9 +774,9 @@ app.get('/api/bot-info', async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: `فشل في الحصول على معلومات البوت: ${error.message}` 
+        res.status(500).json({
+            success: false,
+            error: `فشل في الحصول على معلومات البوت: ${error.message}`
         });
     }
 });
@@ -789,17 +788,17 @@ app.post('/api/bot-commands', async (req, res) => {
             { command: 'start', description: 'بدء استخدام البوت' }
             // Add more commands here if you implement them
         ];
-        
+
         await bot.setMyCommands(commands);
-        
-        res.json({ 
-            success: true, 
-            message: 'تم تحديث أوامر البوت بنجاح' 
+
+        res.json({
+            success: true,
+            message: 'تم تحديث أوامر البوت بنجاح'
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            error: `فشل في تحديث أوامر البوت: ${error.message}` 
+        res.status(500).json({
+            success: false,
+            error: `فشل في تحديث أوامر البوت: ${error.message}`
         });
     }
 });
@@ -811,7 +810,7 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        // With webhooks, bot.isPolling() will always be false. 
+        // With webhooks, bot.isPolling() will always be false.
         // We rely on the webhook being set and Express server running.
         botWebhookSet: true // Indicate that webhook setup was attempted
     });
@@ -878,5 +877,4 @@ process.on('SIGTERM', async () => {
         console.error('فشل حذف الويب هوك:', err.message);
     } finally {
         process.exit(0);
-    }
-});
+    });
