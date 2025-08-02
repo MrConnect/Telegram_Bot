@@ -8,9 +8,20 @@ const path = require('path');
 require('dotenv').config();
 
 const token = process.env.BOT_TOKEN;
+// Validate BOT_TOKEN presence
+if (!token) {
+    console.error('Error: BOT_TOKEN is not defined in your .env file. Please set it to start the bot.');
+    process.exit(1); // Exit if no token is found
+}
+
 const bot = new TelegramBot(token, {polling: true});
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// --- Add these middleware lines to parse request bodies ---
+app.use(express.json()); // To parse JSON request bodies
+app.use(express.urlencoded({ extended: true })); // To parse URL-encoded request bodies
+// --- End of added middleware ---
 
 // File paths for persistent storage
 const DATA_FILE = 'bot_data.json';
@@ -295,7 +306,7 @@ app.get('/api/pages/:pageId', (req, res) => {
 
 // Add New Page
 app.post('/api/pages', (req, res) => {
-    const { pageId, pageData } = req.body;
+    const { pageId, pageData } = req.body; // This line now works correctly!
     
     if (!pageId || !pageData || !pageData.title || !pageData.message) {
         return res.status(400).json({ error: 'معرف الصفحة والعنوان والرسالة مطلوبة' });
@@ -422,16 +433,16 @@ app.get('/api/files', (req, res) => {
 
 // Multer storage for handling file uploads (in-memory buffer for Telegram upload)
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
+const uploadBuffer = multer({ storage: storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
 
 // Upload a New File
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+app.post('/api/upload', uploadBuffer.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف' });
         }
         const adminChatId = req.body.adminChatId || process.env.ADMIN_CHAT_ID; // Get from form data or env
-        if (!adminChatId || adminChatId === '123456789') {
+        if (!adminChatId || adminChatId === 'YOUR_ADMIN_CHAT_ID') { // Changed default placeholder
             return res.status(400).json({ error: 'الرجاء توفير معرف دردشة المسؤول (CHAT_ID) لرفع الملفات' });
         }
         
@@ -548,7 +559,7 @@ app.get('/api/export', (req, res) => {
 });
 
 // Import Data
-app.post('/api/import', upload.single('backupFile'), async (req, res) => {
+app.post('/api/import', uploadBuffer.single('backupFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف النسخة الاحتياطية' });
