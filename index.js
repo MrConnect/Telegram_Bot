@@ -21,54 +21,8 @@ const upload = multer({
     }
 });
 
-// قاعدة البيانات في الذاكرة (سيتم حفظها في ملف لاحقاً)
-let botData = {
-    main_page: {
-        title: "🏠 الصفحة الرئيسية",
-        message: "مرحباً بك! اختر من القائمة التالية:",
-        buttons: [
-            [{text: "📷 الصور", callback_data: "photos_page"}],
-            [{text: "📄 المستندات", callback_data: "docs_page"}], 
-            [{text: "🎥 الفيديوهات", callback_data: "videos_page"}],
-            [{text: "ℹ️ معلومات", callback_data: "info_page"}]
-        ]
-    },
-    photos_page: {
-        title: "📷 قسم الصور",
-        message: "اختر الصورة التي تريد عرضها:",
-        buttons: [
-            [{text: "صورة المنتج 1", callback_data: "photo_1"}],
-            [{text: "صورة المنتج 2", callback_data: "photo_2"}],
-            [{text: "🔙 رجوع", callback_data: "main_page"}]
-        ]
-    },
-    docs_page: {
-        title: "📄 قسم المستندات", 
-        message: "اختر المستند الذي تريد تحميله:",
-        buttons: [
-            [{text: "الكتالوج", callback_data: "doc_catalog"}],
-            [{text: "قائمة الأسعار", callback_data: "doc_prices"}],
-            [{text: "🔙 رجوع", callback_data: "main_page"}]
-        ]
-    },
-    videos_page: {
-        title: "🎥 قسم الفيديوهات",
-        message: "اختر الفيديو الذي تريد مشاهدته:",
-        buttons: [
-            [{text: "فيديو تعريفي", callback_data: "video_1"}],
-            [{text: "شرح المنتج", callback_data: "video_2"}],
-            [{text: "🔙 رجوع", callback_data: "main_page"}]
-        ]
-    },
-    info_page: {
-        title: "ℹ️ معلومات",
-        message: "معلومات عن البوت:\n\n✅ بوت لعرض المحتوى\n✅ سهل الاستخدام\n✅ محدث باستمرار",
-        buttons: [
-            [{text: "📞 تواصل معنا", callback_data: "contact"}],
-            [{text: "🔙 رجوع", callback_data: "main_page"}]
-        ]
-    }
-};
+// قاعدة البيانات في الذاكرة - فارغة تماماً
+let botData = {};
 
 // بيانات الملفات
 let filesData = {};
@@ -96,11 +50,14 @@ function resetDailyStats() {
 // دالة عرض الصفحة
 function showPage(chatId, pageKey, messageId = null) {
     const page = botData[pageKey];
-    if (!page) return;
+    if (!page) {
+        bot.sendMessage(chatId, "⚠️ هذه الصفحة غير موجودة.");
+        return;
+    }
     
     const options = {
         reply_markup: {
-            inline_keyboard: page.buttons
+            inline_keyboard: page.buttons || []
         }
     };
     
@@ -127,7 +84,19 @@ bot.onText(/\/start/, (msg) => {
     stats.messages++;
     stats.todayMessages++;
     
-    showPage(chatId, 'main_page');
+    // رسالة ترحيب بسيطة عندما لا توجد صفحات
+    if (Object.keys(botData).length === 0) {
+        bot.sendMessage(chatId, "🤖 مرحباً بك في البوت!\n\nلا توجد صفحات متاحة حالياً.\nيمكن للمشرف إضافة صفحات من لوحة التحكم.");
+    } else {
+        // إذا كانت هناك صفحة رئيسية، اعرضها
+        if (botData['main_page']) {
+            showPage(chatId, 'main_page');
+        } else {
+            // اعرض أول صفحة متاحة
+            const firstPage = Object.keys(botData)[0];
+            showPage(chatId, firstPage);
+        }
+    }
 });
 
 // معالجة الأزرار
@@ -161,18 +130,12 @@ bot.on('callback_query', (query) => {
     // التعامل مع الصفحات
     if (botData[data]) {
         showPage(chatId, data, messageId);
-    } else if (data === 'contact') {
+    } else {
         bot.editMessageText(
-            "📞 للتواصل معنا:\n\n" +
-            "📧 البريد الإلكتروني: info@example.com\n" +
-            "📱 الهاتف: +20123456789\n\n" +
-            "👈 اضغط رجوع للعودة للقائمة",
+            "⚠️ هذا الزر غير متاح حالياً.",
             {
                 chat_id: chatId,
-                message_id: messageId,
-                reply_markup: {
-                    inline_keyboard: [[{text: "🔙 رجوع", callback_data: "main_page"}]]
-                }
+                message_id: messageId
             }
         );
     }
@@ -196,7 +159,7 @@ app.get('/api/stats', (req, res) => {
         files: Object.keys(filesData).length,
         todayUsers: stats.todayUsers.size,
         todayMessages: stats.todayMessages,
-        topPage: 'main_page',
+        topPage: Object.keys(botData)[0] || null,
         uptime: Math.floor((Date.now() - stats.startDate.getTime()) / 1000 / 60)
     });
 });
@@ -230,7 +193,14 @@ app.post('/api/pages', (req, res) => {
         return res.status(400).json({ error: 'هذه الصفحة موجودة بالفعل' });
     }
     
-    botData[pageId] = pageData;
+    // إضافة البيانات الافتراضية للصفحة
+    const newPage = {
+        title: pageData.title || 'صفحة جديدة',
+        message: pageData.message || 'رسالة الصفحة',
+        buttons: pageData.buttons || []
+    };
+    
+    botData[pageId] = newPage;
     res.json({ success: true, message: 'تم إضافة الصفحة بنجاح' });
 });
 
@@ -476,14 +446,7 @@ app.post('/api/restart', (req, res) => {
 
 // مسح جميع البيانات
 app.post('/api/clear-all', (req, res) => {
-    botData = {
-        main_page: {
-            title: "🏠 الصفحة الرئيسية",
-            message: "مرحباً بك! اختر من القائمة التالية:",
-            buttons: []
-        }
-    };
-    
+    botData = {};
     filesData = {};
     
     stats = {
@@ -537,23 +500,27 @@ app.get('/api/search', (req, res) => {
 
 // الحصول على سجل الأنشطة
 app.get('/api/activity-log', (req, res) => {
-    // سجل بسيط للأنشطة (يمكن تطويره أكثر)
+    // سجل بسيط للأنشطة
     const activities = [
         {
             id: 1,
-            type: 'user_interaction',
-            description: 'مستخدم جديد انضم للبوت',
-            timestamp: new Date().toISOString(),
-            details: { users: stats.users.size }
-        },
-        {
-            id: 2,
-            type: 'page_view',
-            description: 'تم عرض الصفحة الرئيسية',
-            timestamp: new Date().toISOString(),
-            details: { page: 'main_page' }
+            type: 'bot_start',
+            description: 'تم تشغيل البوت',
+            timestamp: stats.startDate.toISOString(),
+            details: { status: 'active' }
         }
     ];
+    
+    // إضافة أنشطة المستخدمين إذا وجدت
+    if (stats.users.size > 0) {
+        activities.push({
+            id: 2,
+            type: 'user_activity',
+            description: `إجمالي المستخدمين: ${stats.users.size}`,
+            timestamp: new Date().toISOString(),
+            details: { users: stats.users.size, messages: stats.messages }
+        });
+    }
     
     res.json(activities);
 });
@@ -624,9 +591,7 @@ app.get('/api/bot-info', async (req, res) => {
 app.post('/api/bot-commands', async (req, res) => {
     try {
         const commands = [
-            { command: 'start', description: 'بدء استخدام البوت' },
-            { command: 'help', description: 'المساعدة' },
-            { command: 'about', description: 'معلومات عن البوت' }
+            { command: 'start', description: 'بدء استخدام البوت' }
         ];
         
         await bot.setMyCommands(commands);
@@ -659,6 +624,7 @@ app.listen(PORT, () => {
     console.log(`🚀 البوت يعمل على البورت ${PORT}`);
     console.log(`📊 لوحة التحكم متاحة على: ${process.env.RENDER_EXTERNAL_URL || 'http://localhost:' + PORT}`);
     console.log(`🤖 البوت متصل ويعمل بانتظار الرسائل...`);
+    console.log(`📄 البوت يبدأ بدون صفحات محددة مسبقاً`);
 });
 
 // معالجة الأخطاء
