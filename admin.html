@@ -1499,6 +1499,24 @@ function setBotCommands() {
             showAlert('⚠️ حدث خطأ أثناء تحديث الأوامر', 'error');
         });
 }
+        function restartBot() {
+    if (confirm('هل أنت متأكد من إعادة تشغيل البوت؟')) {
+        fetch('/api/restart', { method: 'POST' })
+            .then(r => r.json())
+            .then(d => showAlert(d.message || '✅ تم إرسال أمر إعادة التشغيل', 'success'))
+            .catch(() => showAlert('⚠️ خطأ أثناء إعادة التشغيل', 'error'));
+    }
+}
+
+        function previewFile(fileId) {
+    fetch(`/api/files/${fileId}/preview`)
+        .then(r => r.json())
+        .then(file => {
+            alert(`📁 اسم: ${file.name}\n📄 نوع: ${file.type}\n📦 حجم: ${file.size}`);
+        })
+        .catch(() => showAlert('⚠️ خطأ أثناء المعاينة', 'error'));
+}
+
 
     </script>
 </body>
