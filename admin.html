@@ -1389,6 +1389,117 @@ async function duplicatePage(pageId) {
     }
 }
 
+        // 📤 تصدير البيانات
+function exportData() {
+    fetch('/api/export')
+        .then(response => {
+            if (!response.ok) throw new Error('خطأ في التصدير');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bot-backup.json';
+            a.click();
+            showAlert('✅ تم تصدير البيانات بنجاح!', 'success');
+        })
+        .catch(error => {
+            console.error(error);
+            showAlert('⚠️ فشل تصدير البيانات', 'error');
+        });
+}
+
+// 📥 استيراد البيانات
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('backupFile', file);
+
+        try {
+            const response = await fetch('/api/import', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+                showAlert('✅ تم استيراد البيانات بنجاح!', 'success');
+                loadPages();
+                loadFiles();
+            } else {
+                showAlert(result.error || '⚠️ فشل استيراد البيانات', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showAlert('⚠️ حدث خطأ أثناء الاستيراد', 'error');
+        }
+    };
+    input.click();
+}
+
+// 🗑️ مسح جميع البيانات
+function clearAllData() {
+    if (!confirm('⚠️ هل أنت متأكد من مسح جميع البيانات؟')) return;
+
+    fetch('/api/clear-all', { method: 'POST' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                showAlert('✅ تم مسح جميع البيانات', 'success');
+                loadPages();
+                loadFiles();
+            } else {
+                showAlert('⚠️ فشل مسح البيانات', 'error');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            showAlert('⚠️ حدث خطأ أثناء المسح', 'error');
+        });
+}
+
+// 🔄 تحديث معلومات البوت
+function updateBotInfo() {
+    fetch('/api/bot-info')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const info = data.botInfo;
+                alert(`🤖 اسم البوت: ${info.first_name}\n📛 اسم المستخدم: @${info.username}\n🆔 ID: ${info.id}`);
+                showAlert('✅ تم تحديث معلومات البوت', 'success');
+            } else {
+                showAlert(data.error || '⚠️ فشل تحديث المعلومات', 'error');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            showAlert('⚠️ حدث خطأ أثناء التحديث', 'error');
+        });
+}
+
+// 📝 إعداد أوامر البوت
+function setBotCommands() {
+    fetch('/api/bot-commands', { method: 'POST' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                showAlert('✅ تم تحديث أوامر البوت', 'success');
+            } else {
+                showAlert(result.error || '⚠️ فشل تحديث أوامر البوت', 'error');
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            showAlert('⚠️ حدث خطأ أثناء تحديث الأوامر', 'error');
+        });
+}
+
     </script>
 </body>
 </html>
