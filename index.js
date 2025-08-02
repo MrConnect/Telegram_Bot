@@ -1,34 +1,26 @@
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const multer = require('multer');
-const fs = require('fs').promises;
+const fs = require('fs').promises; // Use fs.promises for async file operations
 const path = require('path');
+
+// Load environment variables (e.g., BOT_TOKEN)
+require('dotenv').config();
 
 const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// إعداد Express
-app.use(express.static('public'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// File paths for persistent storage
+const DATA_FILE = 'bot_data.json';
+const FILES_FILE = 'files_data.json';
+const STATS_FILE = 'stats_data.json';
 
-// إعداد Multer لرفع الملفات
-const upload = multer({
-    limits: {
-        fileSize: 50 * 1024 * 1024 // 50MB max
-    }
-});
-
-// قاعدة البيانات في الذاكرة - فارغة تماماً
-let botData = {};
-
-// بيانات الملفات
-let filesData = {};
-
-// الإحصائيات
-let stats = {
+// In-memory databases - these will be loaded from files
+let botData = {}; // Stores page data
+let filesData = {}; // Stores file metadata (including Telegram file_id)
+let stats = { // Stores bot usage statistics
     users: new Set(),
     messages: 0,
     todayUsers: new Set(),
@@ -37,17 +29,96 @@ let stats = {
     dailyReset: new Date().toDateString()
 };
 
-// إعادة تعيين الإحصائيات اليومية
+// --- Data Persistence Functions ---
+
+// Load data from JSON files
+async function loadData() {
+    try {
+        const data = await fs.readFile(DATA_FILE, 'utf8');
+        botData = JSON.parse(data);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('No bot_data.json found, starting with empty bot data.');
+            botData = {}; // Initialize as empty object if file doesn't exist
+        } else {
+            console.error('Error loading bot data:', err);
+        }
+    }
+
+    try {
+        const data = await fs.readFile(FILES_FILE, 'utf8');
+        filesData = JSON.parse(data);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('No files_data.json found, starting with empty files data.');
+            filesData = {}; // Initialize as empty object if file doesn't exist
+        } else {
+            console.error('Error loading files data:', err);
+        }
+    }
+
+    try {
+        const data = await fs.readFile(STATS_FILE, 'utf8');
+        const loadedStats = JSON.parse(data);
+        // Reconstruct Sets from arrays as JSON doesn't directly support Sets
+        stats.users = new Set(loadedStats.users || []);
+        stats.messages = loadedStats.messages || 0;
+        stats.todayUsers = new Set(loadedStats.todayUsers || []);
+        stats.todayMessages = loadedStats.todayMessages || 0;
+        stats.startDate = loadedStats.startDate ? new Date(loadedStats.startDate) : new Date();
+        stats.dailyReset = loadedStats.dailyReset || new Date().toDateString();
+        resetDailyStats(); // Ensure daily stats are reset if day has changed
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('No stats_data.json found, starting with default stats.');
+            stats = { // Initialize with default values if file doesn't exist
+                users: new Set(),
+                messages: 0,
+                todayUsers: new Set(),
+                todayMessages: 0,
+                startDate: new Date(),
+                dailyReset: new Date().toDateString()
+            };
+        } else {
+            console.error('Error loading stats data:', err);
+        }
+    }
+}
+
+// Save all data to JSON files
+async function saveData() {
+    try {
+        // Convert Sets to Arrays for JSON serialization
+        const statsToSave = {
+            users: Array.from(stats.users),
+            messages: stats.messages,
+            todayUsers: Array.from(stats.todayUsers),
+            todayMessages: stats.todayMessages,
+            startDate: stats.startDate.toISOString(), // Save date as ISO string
+            dailyReset: stats.dailyReset
+        };
+        await fs.writeFile(DATA_FILE, JSON.stringify(botData, null, 2));
+        await fs.writeFile(FILES_FILE, JSON.stringify(filesData, null, 2));
+        await fs.writeFile(STATS_FILE, JSON.stringify(statsToSave, null, 2));
+    } catch (err) {
+        console.error('Error saving data:', err);
+    }
+}
+
+// --- Bot Logic ---
+
+// Reset daily stats
 function resetDailyStats() {
     const today = new Date().toDateString();
     if (stats.dailyReset !== today) {
         stats.todayUsers = new Set();
         stats.todayMessages = 0;
         stats.dailyReset = today;
+        saveData(); // Save changes to stats after reset
     }
 }
 
-// دالة عرض الصفحة
+// Function to display a page to the user
 function showPage(chatId, pageKey, messageId = null) {
     const page = botData[pageKey];
     if (!page) {
@@ -55,10 +126,23 @@ function showPage(chatId, pageKey, messageId = null) {
         return;
     }
     
+    // Ensure buttons are in the correct Telegram format (array of arrays)
+    const inlineKeyboard = page.buttons ? page.buttons.map(row => 
+        row.map(button => {
+            if (button.url) {
+                return { text: button.text, url: button.url };
+            } else {
+                // For callback_data, ensure it's a string
+                return { text: button.text, callback_data: String(button.callback_data) };
+            }
+        })
+    ) : [];
+
     const options = {
         reply_markup: {
-            inline_keyboard: page.buttons || []
-        }
+            inline_keyboard: inlineKeyboard
+        },
+        parse_mode: 'Markdown' // Allow basic Markdown in messages
     };
     
     const message = `${page.title}\n\n${page.message}`;
@@ -67,91 +151,119 @@ function showPage(chatId, pageKey, messageId = null) {
         bot.editMessageText(message, {
             chat_id: chatId,
             message_id: messageId,
-            reply_markup: options.reply_markup
-        }).catch(err => console.log('Edit message error:', err.message));
+            reply_markup: options.reply_markup,
+            parse_mode: options.parse_mode
+        }).catch(err => console.log('Edit message error (could be message too old or identical):', err.message));
     } else {
         bot.sendMessage(chatId, message, options);
     }
 }
 
-// أمر البداية
+// Start Command
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    resetDailyStats();
+    resetDailyStats(); // Check and reset daily stats
     
     stats.users.add(chatId);
     stats.todayUsers.add(chatId);
     stats.messages++;
     stats.todayMessages++;
-    
-    // رسالة ترحيب بسيطة عندما لا توجد صفحات
+    saveData(); // Save stats changes
+
     if (Object.keys(botData).length === 0) {
         bot.sendMessage(chatId, "🤖 مرحباً بك في البوت!\n\nلا توجد صفحات متاحة حالياً.\nيمكن للمشرف إضافة صفحات من لوحة التحكم.");
     } else {
-        // إذا كانت هناك صفحة رئيسية، اعرضها
-        if (botData['main_page']) {
-            showPage(chatId, 'main_page');
+        // Try to show 'main_page' first, otherwise the first available page
+        const initialPage = botData['main_page'] ? 'main_page' : Object.keys(botData)[0];
+        if (initialPage) {
+            showPage(chatId, initialPage);
         } else {
-            // اعرض أول صفحة متاحة
-            const firstPage = Object.keys(botData)[0];
-            showPage(chatId, firstPage);
+             bot.sendMessage(chatId, "🤖 مرحباً بك في البوت!\n\nلا توجد صفحات متاحة حالياً.\nيمكن للمشرف إضافة صفحات من لوحة التحكم.");
         }
     }
 });
 
-// معالجة الأزرار
-bot.on('callback_query', (query) => {
+// Callback Query Handler (for inline buttons)
+bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
-    const data = query.callback_data;
+    const data = String(query.callback_data); // Ensure data is a string
     
     resetDailyStats();
     stats.messages++;
     stats.todayMessages++;
-    
-    bot.answerCallbackQuery(query.id);
-    
-    // التعامل مع الملفات
-    if (filesData[data]) {
-        const file = filesData[data];
-        
-        if (file.type.startsWith('image/')) {
-            bot.sendPhoto(chatId, file.file_id);
-        } else if (file.type.startsWith('video/')) {
-            bot.sendVideo(chatId, file.file_id);
-        } else if (file.type.startsWith('audio/')) {
-            bot.sendAudio(chatId, file.file_id);
+    saveData(); // Save stats changes
+
+    await bot.answerCallbackQuery(query.id); // Acknowledge the callback query
+
+    // Handle File buttons (prefixed with 'file_')
+    if (data.startsWith('file_')) {
+        const fileId = data.substring(5); // Remove 'file_' prefix
+        const file = filesData[fileId];
+        if (file && file.file_id) {
+            try {
+                if (file.type.startsWith('image/')) {
+                    await bot.sendPhoto(chatId, file.file_id);
+                } else if (file.type.startsWith('video/')) {
+                    await bot.sendVideo(chatId, file.file_id);
+                } else if (file.type.startsWith('audio/')) {
+                    await bot.sendAudio(chatId, file.file_id);
+                } else {
+                    await bot.sendDocument(chatId, file.file_id);
+                }
+            } catch (err) {
+                console.error(`Error sending file ${fileId}:`, err.message);
+                bot.sendMessage(chatId, "⚠️ حدث خطأ أثناء إرسال هذا الملف.");
+            }
         } else {
-            bot.sendDocument(chatId, file.file_id);
+            bot.sendMessage(chatId, "⚠️ هذا الملف غير متاح حالياً.");
         }
         return;
     }
     
-    // التعامل مع الصفحات
-    if (botData[data]) {
-        showPage(chatId, data, messageId);
-    } else {
-        bot.editMessageText(
-            "⚠️ هذا الزر غير متاح حالياً.",
-            {
-                chat_id: chatId,
-                message_id: messageId
-            }
-        );
+    // Handle Page buttons (prefixed with 'page_')
+    if (data.startsWith('page_')) {
+        const pageKey = data.substring(5); // Remove 'page_' prefix
+        if (botData[pageKey]) {
+            showPage(chatId, pageKey, messageId);
+        } else {
+            bot.editMessageText(
+                "⚠️ هذه الصفحة غير متاحة حالياً.",
+                { chat_id: chatId, message_id: messageId }
+            ).catch(err => console.log('Edit message error (page not found):', err.message));
+        }
+        return;
     }
+
+    // Handle Text buttons (prefixed with 'text_')
+    if (data.startsWith('text_')) {
+        const textContent = data.substring(5); // The actual text is after 'text_'
+        bot.sendMessage(chatId, textContent); // Send the text directly
+        return;
+    }
+
+    // Fallback for unknown callback_data (e.g., old buttons or corrupted data)
+    bot.editMessageText(
+        "⚠️ هذا الزر غير متاح حالياً أو غير معروف.",
+        { chat_id: chatId, message_id: messageId }
+    ).catch(err => console.log('Edit message error (unknown button):', err.message));
 });
 
-// API Routes
+// --- Express API Routes ---
 
-// الصفحة الرئيسية - لوحة التحكم
+// Serve the admin dashboard HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// احصائيات
+// Get Bot Statistics
 app.get('/api/stats', (req, res) => {
-    resetDailyStats();
+    resetDailyStats(); // Ensure stats are up-to-date before sending
     
+    const now = new Date();
+    const uptimeMs = now.getTime() - stats.startDate.getTime();
+    const uptimeMinutes = Math.floor(uptimeMs / (1000 * 60));
+
     res.json({
         users: stats.users.size,
         messages: stats.messages,
@@ -159,17 +271,17 @@ app.get('/api/stats', (req, res) => {
         files: Object.keys(filesData).length,
         todayUsers: stats.todayUsers.size,
         todayMessages: stats.todayMessages,
-        topPage: Object.keys(botData)[0] || null,
-        uptime: Math.floor((Date.now() - stats.startDate.getTime()) / 1000 / 60)
+        topPage: Object.keys(botData)[0] || null, // Simple top page, could be improved with actual tracking
+        uptime: uptimeMinutes
     });
 });
 
-// جلب جميع الصفحات
+// Get All Pages
 app.get('/api/pages', (req, res) => {
     res.json(botData);
 });
 
-// جلب صفحة محددة
+// Get a Specific Page
 app.get('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
     const page = botData[pageId];
@@ -181,43 +293,45 @@ app.get('/api/pages/:pageId', (req, res) => {
     res.json(page);
 });
 
-// إضافة صفحة جديدة
+// Add New Page
 app.post('/api/pages', (req, res) => {
     const { pageId, pageData } = req.body;
     
-    if (!pageId || !pageData) {
-        return res.status(400).json({ error: 'بيانات الصفحة مطلوبة' });
+    if (!pageId || !pageData || !pageData.title || !pageData.message) {
+        return res.status(400).json({ error: 'معرف الصفحة والعنوان والرسالة مطلوبة' });
     }
     
     if (botData[pageId]) {
-        return res.status(400).json({ error: 'هذه الصفحة موجودة بالفعل' });
+        return res.status(400).json({ error: 'معرف الصفحة هذا موجود بالفعل' });
     }
     
-    // إضافة البيانات الافتراضية للصفحة
     const newPage = {
-        title: pageData.title || 'صفحة جديدة',
-        message: pageData.message || 'رسالة الصفحة',
+        title: pageData.title,
+        message: pageData.message,
         buttons: pageData.buttons || []
     };
     
     botData[pageId] = newPage;
+    saveData(); // Save changes
     res.json({ success: true, message: 'تم إضافة الصفحة بنجاح' });
 });
 
-// تحديث صفحة
+// Update an Existing Page
 app.put('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
-    const pageData = req.body;
+    const pageData = req.body; // Can contain title, message, buttons
     
     if (!botData[pageId]) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
     
+    // Merge new data with existing page data
     botData[pageId] = { ...botData[pageId], ...pageData };
+    saveData(); // Save changes
     res.json({ success: true, message: 'تم تحديث الصفحة بنجاح' });
 });
 
-// حذف صفحة
+// Delete a Page
 app.delete('/api/pages/:pageId', (req, res) => {
     const pageId = req.params.pageId;
     
@@ -226,10 +340,11 @@ app.delete('/api/pages/:pageId', (req, res) => {
     }
     
     delete botData[pageId];
+    saveData(); // Save changes
     res.json({ success: true, message: 'تم حذف الصفحة بنجاح' });
 });
 
-// جلب أزرار صفحة محددة
+// Get Buttons for a Specific Page
 app.get('/api/pages/:pageId/buttons', (req, res) => {
     const pageId = req.params.pageId;
     const page = botData[pageId];
@@ -241,7 +356,7 @@ app.get('/api/pages/:pageId/buttons', (req, res) => {
     res.json(page.buttons || []);
 });
 
-// إضافة زر لصفحة
+// Add a Button to a Page
 app.post('/api/pages/:pageId/buttons', (req, res) => {
     const pageId = req.params.pageId;
     const { buttonData, rowIndex } = req.body;
@@ -249,59 +364,100 @@ app.post('/api/pages/:pageId/buttons', (req, res) => {
     if (!botData[pageId]) {
         return res.status(404).json({ error: 'الصفحة غير موجودة' });
     }
+    if (!buttonData || !buttonData.text) {
+        return res.status(400).json({ error: 'بيانات الزر مطلوبة (نص الزر على الأقل)' });
+    }
+
+    // Ensure callback_data/url fields are correctly set up by frontend,
+    // and just store them as provided. The bot logic handles prefixes.
     
     if (!botData[pageId].buttons) {
         botData[pageId].buttons = [];
     }
     
-    const targetRow = rowIndex !== undefined ? rowIndex : botData[pageId].buttons.length;
+    // If rowIndex is provided, try to add to an existing row
+    // Otherwise, add to a new row (or the end if no rowIndex)
+    const targetRow = rowIndex !== undefined ? parseInt(rowIndex) : botData[pageId].buttons.length;
     
     if (!botData[pageId].buttons[targetRow]) {
-        botData[pageId].buttons[targetRow] = [];
+        botData[pageId].buttons[targetRow] = []; // Create new row if it doesn't exist
     }
-    
+
     botData[pageId].buttons[targetRow].push(buttonData);
-    
+    saveData(); // Save changes
     res.json({ success: true, message: 'تم إضافة الزر بنجاح' });
 });
 
-// جلب جميع الملفات
+// Delete a Button from a Page
+app.delete('/api/pages/:pageId/buttons', (req, res) => {
+    const pageId = req.params.pageId;
+    const { rowIndex, buttonIndex } = req.body;
+
+    if (!botData[pageId]) {
+        return res.status(404).json({ error: 'الصفحة غير موجودة' });
+    }
+    if (!botData[pageId].buttons || !Array.isArray(botData[pageId].buttons[rowIndex])) {
+        return res.status(404).json({ error: 'الصف أو الزر غير موجود' });
+    }
+
+    if (buttonIndex !== undefined && botData[pageId].buttons[rowIndex][buttonIndex]) {
+        botData[pageId].buttons[rowIndex].splice(buttonIndex, 1); // Remove the button
+
+        // If the row becomes empty, consider removing the row
+        if (botData[pageId].buttons[rowIndex].length === 0) {
+            botData[pageId].buttons.splice(rowIndex, 1);
+        }
+        saveData(); // Save changes
+        return res.json({ success: true, message: 'تم حذف الزر بنجاح' });
+    } else {
+        return res.status(404).json({ error: 'الزر المحدد غير موجود' });
+    }
+});
+
+
+// Get All Files
 app.get('/api/files', (req, res) => {
     res.json(filesData);
 });
 
-// رفع ملف جديد
+// Multer storage for handling file uploads (in-memory buffer for Telegram upload)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB max
+
+// Upload a New File
 app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف' });
         }
-        
-        // إرسال الملف للبوت للحصول على file_id
-        let sentMessage;
-        const tempChatId = process.env.ADMIN_CHAT_ID || '123456789'; // ضع chat ID للإدارة
-        
-        if (req.file.mimetype.startsWith('image/')) {
-            sentMessage = await bot.sendPhoto(tempChatId, req.file.buffer, {
-                caption: `ملف جديد: ${req.file.originalname}`
-            });
-        } else if (req.file.mimetype.startsWith('video/')) {
-            sentMessage = await bot.sendVideo(tempChatId, req.file.buffer, {
-                caption: `ملف جديد: ${req.file.originalname}`
-            });
-        } else if (req.file.mimetype.startsWith('audio/')) {
-            sentMessage = await bot.sendAudio(tempChatId, req.file.buffer, {
-                caption: `ملف جديد: ${req.file.originalname}`
-            });
-        } else {
-            sentMessage = await bot.sendDocument(tempChatId, req.file.buffer, {
-                caption: `ملف جديد: ${req.file.originalname}`
-            });
+        const adminChatId = req.body.adminChatId || process.env.ADMIN_CHAT_ID; // Get from form data or env
+        if (!adminChatId || adminChatId === '123456789') {
+            return res.status(400).json({ error: 'الرجاء توفير معرف دردشة المسؤول (CHAT_ID) لرفع الملفات' });
         }
         
-        // الحصول على file_id
+        // Send the file to the bot to get file_id
+        let sentMessage;
+        
+        // Use an object to store common options
+        const sendOptions = {
+            caption: `ملف جديد: ${req.file.originalname}`,
+            filename: req.file.originalname // Important for sendDocument
+        };
+
+        if (req.file.mimetype.startsWith('image/')) {
+            sentMessage = await bot.sendPhoto(adminChatId, req.file.buffer, sendOptions);
+        } else if (req.file.mimetype.startsWith('video/')) {
+            sentMessage = await bot.sendVideo(adminChatId, req.file.buffer, sendOptions);
+        } else if (req.file.mimetype.startsWith('audio/')) {
+            sentMessage = await bot.sendAudio(adminChatId, req.file.buffer, sendOptions);
+        } else {
+            sentMessage = await bot.sendDocument(adminChatId, req.file.buffer, sendOptions);
+        }
+        
+        // Extract file_id from the sent message response
         let fileId;
         if (sentMessage.photo) {
+            // Photos come as an array of different sizes, get the largest one
             fileId = sentMessage.photo[sentMessage.photo.length - 1].file_id;
         } else if (sentMessage.video) {
             fileId = sentMessage.video.file_id;
@@ -310,32 +466,38 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         } else if (sentMessage.document) {
             fileId = sentMessage.document.file_id;
         }
+
+        if (!fileId) {
+            throw new Error("فشل الحصول على معرف الملف من تيليجرام.");
+        }
         
-        // حفظ بيانات الملف
+        // Save file metadata
+        const uniqueFileId = Date.now().toString(); // Use timestamp as a unique ID for our system
         const fileData = {
-            id: Date.now().toString(),
+            id: uniqueFileId,
             name: req.file.originalname,
             type: req.file.mimetype,
             size: req.file.size,
-            file_id: fileId,
+            file_id: fileId, // This is the Telegram file_id
             uploadDate: new Date().toISOString()
         };
         
         filesData[fileData.id] = fileData;
+        saveData(); // Save changes
         
         res.json({ 
             success: true, 
             message: 'تم رفع الملف بنجاح',
-            fileData: fileData
+            fileData: fileData 
         });
         
     } catch (error) {
         console.error('Upload error:', error);
-        res.status(500).json({ error: 'حدث خطأ في رفع الملف' });
+        res.status(500).json({ error: `حدث خطأ في رفع الملف: ${error.message}` });
     }
 });
 
-// حذف ملف
+// Delete a File
 app.delete('/api/files/:fileId', (req, res) => {
     const fileId = req.params.fileId;
     
@@ -344,10 +506,11 @@ app.delete('/api/files/:fileId', (req, res) => {
     }
     
     delete filesData[fileId];
+    saveData(); // Save changes
     res.json({ success: true, message: 'تم حذف الملف بنجاح' });
 });
 
-// معاينة ملف
+// Preview File (returns metadata, not the file itself)
 app.get('/api/files/:fileId/preview', (req, res) => {
     const fileId = req.params.fileId;
     const file = filesData[fileId];
@@ -365,42 +528,16 @@ app.get('/api/files/:fileId/preview', (req, res) => {
     });
 });
 
-// إضافة زر مع ملف
-app.post('/api/buttons/file', (req, res) => {
-    const { pageId, buttonText, fileId } = req.body;
-    
-    if (!botData[pageId]) {
-        return res.status(404).json({ error: 'الصفحة غير موجودة' });
-    }
-    
-    if (!filesData[fileId]) {
-        return res.status(404).json({ error: 'الملف غير موجود' });
-    }
-    
-    const buttonData = {
-        text: buttonText,
-        callback_data: fileId
-    };
-    
-    if (!botData[pageId].buttons) {
-        botData[pageId].buttons = [];
-    }
-    
-    // إضافة الزر في صف جديد
-    botData[pageId].buttons.push([buttonData]);
-    
-    res.json({ success: true, message: 'تم إضافة الزر مع الملف بنجاح' });
-});
-
-// تصدير البيانات
+// Export Data
 app.get('/api/export', (req, res) => {
+    resetDailyStats(); // Ensure stats are fresh before export
     const exportData = {
         botData: botData,
         filesData: filesData,
         stats: {
-            totalUsers: stats.users.size,
+            totalUsers: Array.from(stats.users), // Export as array
             totalMessages: stats.messages,
-            startDate: stats.startDate
+            startDate: stats.startDate.toISOString()
         },
         exportDate: new Date().toISOString()
     };
@@ -410,14 +547,15 @@ app.get('/api/export', (req, res) => {
     res.json(exportData);
 });
 
-// استيراد البيانات
+// Import Data
 app.post('/api/import', upload.single('backupFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'لم يتم تحديد ملف النسخة الاحتياطية' });
         }
         
-        const backupData = JSON.parse(req.file.buffer.toString());
+        const backupContent = req.file.buffer.toString();
+        const backupData = JSON.parse(backupContent);
         
         if (backupData.botData) {
             botData = backupData.botData;
@@ -427,24 +565,36 @@ app.post('/api/import', upload.single('backupFile'), async (req, res) => {
             filesData = backupData.filesData;
         }
         
+        if (backupData.stats) {
+            // Reconstruct Sets from imported arrays
+            stats.users = new Set(backupData.stats.totalUsers || []);
+            stats.messages = backupData.stats.totalMessages || 0;
+            stats.startDate = backupData.stats.startDate ? new Date(backupData.stats.startDate) : new Date();
+            // Preserve current daily stats or reset them
+            stats.todayUsers = new Set(); // Reset for today after import
+            stats.todayMessages = 0;
+            stats.dailyReset = new Date().toDateString();
+        }
+        
+        saveData(); // Save imported data to disk
         res.json({ success: true, message: 'تم استيراد البيانات بنجاح' });
         
     } catch (error) {
         console.error('Import error:', error);
-        res.status(500).json({ error: 'حدث خطأ في استيراد البيانات' });
+        res.status(500).json({ error: `حدث خطأ في استيراد البيانات: ${error.message}` });
     }
 });
 
-// إعادة تشغيل البوت
+// Restart Bot Process
 app.post('/api/restart', (req, res) => {
     res.json({ success: true, message: 'جاري إعادة تشغيل البوت...' });
-    
+    // Give client time to receive response then exit
     setTimeout(() => {
         process.exit(0);
     }, 1000);
 });
 
-// مسح جميع البيانات
+// Clear All Data
 app.post('/api/clear-all', (req, res) => {
     botData = {};
     filesData = {};
@@ -458,10 +608,11 @@ app.post('/api/clear-all', (req, res) => {
         dailyReset: new Date().toDateString()
     };
     
+    saveData(); // Save cleared state
     res.json({ success: true, message: 'تم مسح جميع البيانات بنجاح' });
 });
 
-// البحث في البيانات
+// Search Data
 app.get('/api/search', (req, res) => {
     const query = req.query.q?.toLowerCase() || '';
     
@@ -469,7 +620,7 @@ app.get('/api/search', (req, res) => {
         return res.json({ pages: [], files: [] });
     }
     
-    // البحث في الصفحات
+    // Search in Pages
     const matchingPages = Object.keys(botData).filter(pageId => {
         const page = botData[pageId];
         return page.title.toLowerCase().includes(query) || 
@@ -481,7 +632,7 @@ app.get('/api/search', (req, res) => {
         type: 'page'
     }));
     
-    // البحث في الملفات
+    // Search in Files
     const matchingFiles = Object.keys(filesData).filter(fileId => {
         const file = filesData[fileId];
         return file.name.toLowerCase().includes(query) ||
@@ -498,39 +649,42 @@ app.get('/api/search', (req, res) => {
     });
 });
 
-// الحصول على سجل الأنشطة
+// Get Activity Log
 app.get('/api/activity-log', (req, res) => {
-    // سجل بسيط للأنشطة
+    // This is a simplified log. For a real app, you'd log events to a file/DB.
     const activities = [
         {
             id: 1,
             type: 'bot_start',
             description: 'تم تشغيل البوت',
             timestamp: stats.startDate.toISOString(),
-            details: { status: 'active' }
-        }
-    ];
-    
-    // إضافة أنشطة المستخدمين إذا وجدت
-    if (stats.users.size > 0) {
-        activities.push({
+            details: { status: 'active', initialUsers: stats.users.size }
+        },
+        {
             id: 2,
-            type: 'user_activity',
-            description: `إجمالي المستخدمين: ${stats.users.size}`,
+            type: 'current_stats',
+            description: `إجمالي المستخدمين: ${stats.users.size}, إجمالي الرسائل: ${stats.messages}`,
             timestamp: new Date().toISOString(),
-            details: { users: stats.users.size, messages: stats.messages }
-        });
-    }
+            details: {
+                totalUsers: stats.users.size,
+                totalMessages: stats.messages,
+                pagesCount: Object.keys(botData).length,
+                filesCount: Object.keys(filesData).length
+            }
+        }
+        // You would add more specific logs here (e.g., page added, file uploaded)
+        // by pushing to a separate array/database table when those events occur.
+    ];
     
     res.json(activities);
 });
 
-// إحصائيات مفصلة
+// Get Detailed Stats
 app.get('/api/detailed-stats', (req, res) => {
     resetDailyStats();
     
     const now = new Date();
-    const uptime = now - stats.startDate;
+    const uptimeMs = now.getTime() - stats.startDate.getTime();
     
     res.json({
         overview: {
@@ -539,11 +693,11 @@ app.get('/api/detailed-stats', (req, res) => {
             totalPages: Object.keys(botData).length,
             totalFiles: Object.keys(filesData).length,
             uptime: {
-                milliseconds: uptime,
-                seconds: Math.floor(uptime / 1000),
-                minutes: Math.floor(uptime / (1000 * 60)),
-                hours: Math.floor(uptime / (1000 * 60 * 60)),
-                days: Math.floor(uptime / (1000 * 60 * 60 * 24))
+                milliseconds: uptimeMs,
+                seconds: Math.floor(uptimeMs / 1000),
+                minutes: Math.floor(uptimeMs / (1000 * 60)),
+                hours: Math.floor(uptimeMs / (1000 * 60 * 60)),
+                days: Math.floor(uptimeMs / (1000 * 60 * 60 * 24))
             }
         },
         today: {
@@ -564,7 +718,7 @@ app.get('/api/detailed-stats', (req, res) => {
     });
 });
 
-// معلومات البوت
+// Get Bot Info from Telegram API
 app.get('/api/bot-info', async (req, res) => {
     try {
         const botInfo = await bot.getMe();
@@ -582,16 +736,17 @@ app.get('/api/bot-info', async (req, res) => {
     } catch (error) {
         res.status(500).json({ 
             success: false, 
-            error: 'فشل في الحصول على معلومات البوت' 
+            error: `فشل في الحصول على معلومات البوت: ${error.message}` 
         });
     }
 });
 
-// تحديث أوامر البوت
+// Set Bot Commands for Telegram
 app.post('/api/bot-commands', async (req, res) => {
     try {
         const commands = [
             { command: 'start', description: 'بدء استخدام البوت' }
+            // Add more commands here if you implement them
         ];
         
         await bot.setMyCommands(commands);
@@ -603,7 +758,7 @@ app.post('/api/bot-commands', async (req, res) => {
     } catch (error) {
         res.status(500).json({ 
             success: false, 
-            error: 'فشل في تحديث أوامر البوت' 
+            error: `فشل في تحديث أوامر البوت: ${error.message}` 
         });
     }
 });
@@ -615,44 +770,61 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        botConnected: bot.isPolling()
+        botConnected: bot.isPolling() // Indicates if bot is actively polling
     });
 });
 
-// تشغيل السيرفر
-app.listen(PORT, () => {
-    console.log(`🚀 البوت يعمل على البورت ${PORT}`);
-    console.log(`📊 لوحة التحكم متاحة على: ${process.env.RENDER_EXTERNAL_URL || 'http://localhost:' + PORT}`);
-    console.log(`🤖 البوت متصل ويعمل بانتظار الرسائل...`);
-    console.log(`📄 البوت يبدأ بدون صفحات محددة مسبقاً`);
+// --- Server Startup & Error Handling ---
+
+// Load data, then start the server
+loadData().then(() => {
+    app.listen(PORT, () => {
+        console.log(`🚀 البوت يعمل على البورت ${PORT}`);
+        console.log(`📊 لوحة التحكم متاحة على: ${process.env.RENDER_EXTERNAL_URL || 'http://localhost:' + PORT}`);
+        console.log(`🤖 البوت متصل ويعمل بانتظار الرسائل...`);
+        console.log(`📄 البوت يبدأ بـ ${Object.keys(botData).length} صفحات و ${Object.keys(filesData).length} ملفات.`);
+        console.log('---');
+        console.log('IMPORTANT: Ensure you have an ADMIN_CHAT_ID set in your environment variables or in the dashboard to upload files!');
+    });
+}).catch(err => {
+    console.error('Failed to load initial data and start server:', err);
+    process.exit(1); // Exit if initial data load fails
 });
 
-// معالجة الأخطاء
+// Bot error handling
 bot.on('error', (error) => {
     console.log('خطأ في البوت:', error.message);
 });
 
 bot.on('polling_error', (error) => {
-    console.log('خطأ في الاتصال:', error.message);
+    console.log('خطأ في الاتصال (polling error):', error.message);
 });
 
+// Process error handling for robustness
 process.on('uncaughtException', (error) => {
-    console.log('خطأ غير متوقع:', error.message);
+    console.error('خطأ غير متوقع (Uncaught Exception):', error);
+    // In production, you might want to log this and restart gracefully
+    process.exit(1); // Exit process after logging
 });
 
-process.on('unhandledRejection', (error) => {
-    console.log('رفض غير معالج:', error.message);
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('رفض غير معالج (Unhandled Rejection) at:', promise, 'reason:', reason);
+    // In production, you might want to log this but not necessarily exit
 });
 
-// إغلاق نظيف للبوت
+// Graceful shutdown
 process.on('SIGINT', () => {
-    console.log('إيقاف البوت...');
-    bot.stopPolling();
-    process.exit(0);
+    console.log('إيقاف البوت (SIGINT)...');
+    bot.stopPolling()
+        .then(() => console.log('البوت توقف عن الاستقطاب.'))
+        .catch(err => console.error('Error stopping polling:', err))
+        .finally(() => process.exit(0));
 });
 
 process.on('SIGTERM', () => {
-    console.log('إنهاء البوت...');
-    bot.stopPolling();
-    process.exit(0);
+    console.log('إنهاء البوت (SIGTERM)...');
+    bot.stopPolling()
+        .then(() => console.log('البوت توقف عن الاستقطاب.'))
+        .catch(err => console.error('Error stopping polling:', err))
+        .finally(() => process.exit(0));
 });
