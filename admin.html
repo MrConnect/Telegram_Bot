@@ -1305,6 +1305,90 @@
             showAlert('⚠️ حدث خطأ في إضافة الزر', 'error');
         }
     }
+        // 📝 تعديل الصفحة
+async function editPage(pageId) {
+    try {
+        const response = await fetch(`/api/pages/${pageId}`);
+        const page = await response.json();
+
+        const newTitle = prompt('عنوان الصفحة:', page.title);
+        const newMessage = prompt('رسالة الصفحة:', page.message);
+
+        if (newTitle && newMessage) {
+            const updateResponse = await fetch(`/api/pages/${pageId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle, message: newMessage })
+            });
+
+            const result = await updateResponse.json();
+            if (result.success) {
+                showAlert('✅ تم تعديل الصفحة بنجاح!', 'success');
+                loadPages();
+            } else {
+                showAlert(result.error || '❌ فشل تعديل الصفحة', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Edit error:', error);
+        showAlert('⚠️ حدث خطأ أثناء تعديل الصفحة', 'error');
+    }
+}
+
+// 🗑️ حذف الصفحة
+async function deletePage(pageId) {
+    if (!confirm('هل أنت متأكد من حذف هذه الصفحة؟')) return;
+
+    try {
+        const response = await fetch(`/api/pages/${pageId}`, { method: 'DELETE' });
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert('✅ تم حذف الصفحة بنجاح!', 'success');
+            loadPages();
+        } else {
+            showAlert(result.error || '❌ فشل حذف الصفحة', 'error');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showAlert('⚠️ حدث خطأ أثناء حذف الصفحة', 'error');
+    }
+}
+
+// 📋 نسخ الصفحة
+async function duplicatePage(pageId) {
+    try {
+        const response = await fetch(`/api/pages/${pageId}`);
+        const page = await response.json();
+
+        const newPageId = prompt('أدخل معرف الصفحة الجديدة:', `${pageId}_copy`);
+        if (!newPageId) return;
+
+        const newPageData = {
+            title: page.title + ' (نسخة)',
+            message: page.message,
+            buttons: page.buttons || []
+        };
+
+        const createResponse = await fetch(`/api/pages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pageId: newPageId, pageData: newPageData })
+        });
+
+        const result = await createResponse.json();
+        if (result.success) {
+            showAlert('✅ تم نسخ الصفحة بنجاح!', 'success');
+            loadPages();
+        } else {
+            showAlert(result.error || '❌ فشل نسخ الصفحة', 'error');
+        }
+    } catch (error) {
+        console.error('Duplicate error:', error);
+        showAlert('⚠️ حدث خطأ أثناء نسخ الصفحة', 'error');
+    }
+}
+
     </script>
 </body>
 </html>
